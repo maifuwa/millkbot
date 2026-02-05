@@ -1,0 +1,11 @@
+services:
+  postgresql:
+    image: docker.io/bitnami/postgresql:latest
+    container_name: postgresql_millkbot
+    ports:
+      - "5432:5432"
+    environment:
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+      - 'POSTGRESQL_DATABASE=millkbot'
+    volumes:
+      - './init.sql:/docker-entrypoint-initdb.d/init.sql:ro'

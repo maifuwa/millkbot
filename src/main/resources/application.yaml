@@ -11,3 +11,13 @@ spring:
 logging:
   level:
     com.bigboss.millkbot: DEBUG
+
+prompt:
+  path: "file:./role.st"
+
+jimmer:
+  language: kotlin
+  show-sql: true
+  pretty-sql: true
+  database-validation-mode: ERROR
+  dialect: org.babyfish.jimmer.sql.dialect.PostgresDialect

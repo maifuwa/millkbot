@@ -1,6 +1,7 @@
 plugins {
-    kotlin("jvm") version "2.2.21"
-    kotlin("plugin.spring") version "2.2.21"
+    kotlin("jvm") version "2.3.10"
+    kotlin("plugin.spring") version "2.3.10"
+    id("com.google.devtools.ksp") version "2.3.5"
     id("org.springframework.boot") version "3.5.10"
     id("io.spring.dependency-management") version "1.1.7"
 }
@@ -19,6 +20,8 @@ repositories {
     mavenCentral()
 }
 
+extra["springAiVersion"] = "1.1.2"
+
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -31,10 +34,24 @@ dependencies {
     // spring
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-aop")
+    implementation("org.springframework.ai:spring-ai-starter-model-openai")
+
+    // database
+    implementation("org.postgresql:postgresql")
+    ksp("org.babyfish.jimmer:jimmer-ksp:0.10.6")
+    implementation("org.babyfish.jimmer:jimmer-spring-boot-starter:0.10.6")
+
 
     // milky
     implementation("org.ntqqrev:milky-kt-sdk:1.1.0")
     implementation("io.ktor:ktor-client-cio:3.4.0")
+
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.ai:spring-ai-bom:${property("springAiVersion")}")
+    }
 }
 
 kotlin {
