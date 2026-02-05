@@ -1,0 +1,24 @@
+package com.bigboss.millkbot.plug.impl
+
+import com.bigboss.millkbot.plug.MessagePlugin
+import org.ntqqrev.milky.IncomingMessage
+import org.ntqqrev.milky.MilkyClient
+import org.slf4j.LoggerFactory
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
+import org.springframework.stereotype.Component
+
+@Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
+class FriendCommandPlugin(
+    private val milkyClient: MilkyClient
+) : MessagePlugin<IncomingMessage.Friend> {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
+
+    override suspend fun handle(msg: IncomingMessage.Friend): Boolean {
+        logger.debug("handle message from {}", msg.senderId)
+
+        return true
+    }
+}

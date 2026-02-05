@@ -32,8 +32,10 @@ class MilkyService(
                 logger.info("Connected to Milky Client")
 
                 milkClient.subscribe { event ->
+                    logger.debug("Received event: {}", event.toString())
                     if (event is Event.MessageReceive) {
-                        _eventFlow.tryEmit(event.data)
+                        val emitted = _eventFlow.tryEmit(event.data)
+                        logger.debug("Message emitted to flow: $emitted")
                     }
                 }
             } catch (e: Exception) {
