@@ -11,7 +11,7 @@ description = "millkbot"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
@@ -25,12 +25,16 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+    // kotlin
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+
     // spring
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-aop")
 
     // milky
-    implementation("org.ntqqrev:milky-kt-types:1.1.0")
+    implementation("org.ntqqrev:milky-kt-sdk:1.1.0")
+    implementation("io.ktor:ktor-client-cio:3.4.0")
 }
 
 kotlin {

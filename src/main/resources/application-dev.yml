@@ -1,4 +1,4 @@
 app:
-  botConfig:
-    baseUrl: ""
+  bot-config:
+    domain: ""
     token: ""
