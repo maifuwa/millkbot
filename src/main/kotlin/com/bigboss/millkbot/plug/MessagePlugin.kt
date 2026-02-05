@@ -5,7 +5,11 @@ import org.springframework.core.Ordered
 
 interface MessagePlugin<T : IncomingMessage> : Ordered {
 
-    suspend fun handle(msg: T): Boolean
+    /**
+     * Handle the message
+     * @return true to continue the plugin chain, false to stop
+     */
+    suspend fun handle(msg: ProcessedMessage<T>): Boolean
 
     override fun getOrder(): Int = Ordered.LOWEST_PRECEDENCE
 }

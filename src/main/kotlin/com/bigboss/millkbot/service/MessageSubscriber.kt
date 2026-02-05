@@ -1,6 +1,7 @@
 package com.bigboss.millkbot.service
 
 import com.bigboss.millkbot.plug.MessagePlugin
+import com.bigboss.millkbot.plug.ProcessedMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.ntqqrev.milky.IncomingMessage
@@ -18,10 +19,12 @@ class MessageSubscriber(
 
     private val friendPlugins by lazy {
         allPlugins.filterIsInstance<MessagePlugin<IncomingMessage.Friend>>()
+            .sortedBy { it.order }
     }
 
     private val groupPlugins by lazy {
         allPlugins.filterIsInstance<MessagePlugin<IncomingMessage.Group>>()
+            .sortedBy { it.order }
     }
 
     init {
@@ -38,10 +41,12 @@ class MessageSubscriber(
     }
 
     private suspend fun <T : IncomingMessage> executeChain(msg: T, plugins: List<MessagePlugin<T>>) {
+        val processedMsg = ProcessedMessage(msg)
         for (plugin in plugins) {
             try {
-                if (plugin.handle(msg)) {
-                    logger.debug("Chain broken by: ${plugin.javaClass.simpleName}")
+                val shouldContinue = plugin.handle(processedMsg)
+                if (!shouldContinue) {
+                    logger.debug("Chain stopped by: ${plugin.javaClass.simpleName}")
                     return
                 }
             } catch (e: Exception) {

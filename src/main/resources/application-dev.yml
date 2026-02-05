@@ -1,4 +1,9 @@
 app:
+  coroutine-config:
+    queueCapacity:
+    corePoolSize:
+    maxPoolSize:
+    keepAliveSeconds:
   bot-config:
-    domain: ""
-    token: ""
+    domain:
+    token:
