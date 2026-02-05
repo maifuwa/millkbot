@@ -3,6 +3,8 @@ package com.bigboss.millkbot.service
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import org.ntqqrev.milky.Event
 import org.ntqqrev.milky.IncomingMessage
@@ -16,30 +18,34 @@ class MilkyService(
     private val applicationScope: CoroutineScope
 ) {
 
-    private val logger = LoggerFactory.getLogger(MilkyService::class.java)
+    private val logger = LoggerFactory.getLogger(javaClass)
     private var subscribe: Job? = null
 
-    fun startListening() {
-        applicationScope.launch {
-            milkClient.connectEvent()
+    private val _eventFlow = MutableSharedFlow<IncomingMessage>(extraBufferCapacity = 100)
+    val eventFlow = _eventFlow.asSharedFlow()
 
-            subscribe = launch {
-                milkClient.subscribe {
-                    if (it is Event.MessageReceive) {
-                        when (it.data) {
-                            is IncomingMessage.Friend -> logger.info("Received a friend message")
-                            else -> logger.info("Received an incoming message")
-                        }
-                    } else logger.warn("Received event: $it")
+    fun startListening() {
+        if (subscribe?.isActive == true) return
+        subscribe = applicationScope.launch {
+            try {
+                milkClient.connectEvent()
+                logger.info("Connected to Milky Client")
+
+                milkClient.subscribe { event ->
+                    if (event is Event.MessageReceive) {
+                        _eventFlow.tryEmit(event.data)
+                    }
                 }
+            } catch (e: Exception) {
+                logger.error("Error in Milky listening: ${e.message}")
             }
         }
     }
 
     @PreDestroy
     fun stopListening() {
+        subscribe?.cancel()
         applicationScope.launch {
-            subscribe?.cancel()
             milkClient.disconnectEvent()
         }
     }
