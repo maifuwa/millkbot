@@ -1,3 +1,9 @@
 spring:
   application:
     name: millkbot
+
+  main:
+    banner-mode: "off"
+
+  profiles:
+    active: prod
