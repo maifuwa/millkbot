@@ -1,6 +1,7 @@
 package com.bigboss.millkbot.plug.impl
 
 import com.bigboss.millkbot.plug.MessagePlugin
+import com.bigboss.millkbot.util.MessageTextConverter
 import org.ntqqrev.milky.IncomingMessage
 import org.ntqqrev.milky.MilkyClient
 import org.ntqqrev.milky.sendPrivateMessage
@@ -16,11 +17,14 @@ class FriendChatPlugin(
     private val logger = LoggerFactory.getLogger(javaClass)
 
     override suspend fun handle(msg: IncomingMessage.Friend): Boolean {
-        val user = msg.senderId
         logger.debug("handle message from {}", msg.senderId)
-        milkyClient.sendPrivateMessage(user) {
-            text("你好")
+
+        val content = MessageTextConverter.toTextForFriend(msg.segments)
+
+        milkyClient.sendPrivateMessage(msg.senderId) {
+            text(content)
         }
+
         return true
     }
 
