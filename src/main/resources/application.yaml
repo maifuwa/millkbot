@@ -11,6 +11,7 @@ spring:
 logging:
   level:
     com.bigboss.millkbot: DEBUG
+    org.springframework.ai.chat.client.advisor: DEBUG
 
 prompt:
   path: "file:./role.st"

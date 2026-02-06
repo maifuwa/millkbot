@@ -1,32 +1,39 @@
 package com.bigboss.millkbot.service
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ntqqrev.milky.OutgoingSegment
 import org.springframework.ai.chat.client.ChatClient
-import org.springframework.ai.chat.prompt.SystemPromptTemplate
-import org.springframework.core.ParameterizedTypeReference
+import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.stereotype.Service
 
 @Service
 class AgentService(
     private val chatClient: ChatClient,
     private val userService: UserService,
-    private val systemPrompt: SystemPromptTemplate,
 ) {
 
     suspend fun chat(id: Long, name: String, message: String): List<OutgoingSegment> {
-        val user = userService.getUser(id, name)
+        val user = withContext(Dispatchers.IO) {
+            userService.getUser(id, name)
+        }
 
-        val systemMessage = systemPrompt.createMessage(
-            mapOf(
-                "user_role" to user.relation,
-                "user_name" to user.name,
-                "current_context" to message,
-            )
+        val userMessage = UserMessage(
+            """
+            userInfo : 
+                id: ${user.id}
+                name: ${user.name}
+                relation: ${user.relation}
+                ${if (user.customPrompt == null) "" else "custom prompt: " + user.customPrompt}
+            message: ${message.trimIndent()}
+        """.trimIndent()
         )
 
-        return chatClient.prompt()
-            .user(systemMessage.text)
+        val response = chatClient.prompt()
+            .user(userMessage.text)
             .call()
-            .entity(object : ParameterizedTypeReference<List<OutgoingSegment>>() {}) ?: emptyList()
+            .content() ?: return emptyList()
+
+        return listOf(OutgoingSegment.Text(OutgoingSegment.Text.Data(response)))
     }
 }
