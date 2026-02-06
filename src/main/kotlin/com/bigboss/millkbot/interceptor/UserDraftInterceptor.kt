@@ -24,6 +24,9 @@ class UserDraftInterceptor : DraftInterceptor<User, UserDraft> {
             if (!isLoaded(draft, User::relation)) {
                 draft.relation = "Guest"
             }
+            if (!isLoaded(draft, User::customPrompt)) {
+                draft.customPrompt = ""
+            }
         }
     }
 }

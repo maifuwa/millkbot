@@ -40,4 +40,4 @@ out/
 .kotlin
 
 application-prod.yml
-role.st
+system_prompt

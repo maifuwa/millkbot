@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY NOT NULL,
+    id BIGINT PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
     relation TEXT NOT NULL DEFAULT 'Guest' CHECK(relation IN ('Master', 'Guest', 'Stranger')),
     custom_prompt TEXT,

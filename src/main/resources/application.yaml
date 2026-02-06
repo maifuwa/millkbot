@@ -14,7 +14,7 @@ logging:
     org.springframework.ai.chat.client.advisor: DEBUG
 
 prompt:
-  path: "file:./role.st"
+  path: "file:./system_prompt"
 
 jimmer:
   language: kotlin
