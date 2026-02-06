@@ -1,5 +1,6 @@
 package com.bigboss.millkbot.service
 
+import com.bigboss.millkbot.tool.GetCurrentTimeTool
 import com.bigboss.millkbot.tool.SendMessageTool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -28,12 +29,13 @@ class AgentService(
             message: ${message.trimIndent()}
         """.trimIndent()
 
-        val tool = SendMessageTool(milkyClient, id)
+        val sendMessageTool = SendMessageTool(milkyClient, id)
+        val getCurrentTimeTool = GetCurrentTimeTool()
 
         withContext(Dispatchers.IO) {
             chatClient.prompt()
                 .user(userMessage)
-                .tools(tool)
+                .tools(sendMessageTool, getCurrentTimeTool)
                 .call()
                 .content()
         }

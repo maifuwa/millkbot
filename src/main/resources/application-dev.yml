@@ -7,3 +7,24 @@ app:
   bot-config:
     domain:
     token:
+
+spring:
+  datasource:
+    url:
+    username:
+    driver-class-name:
+    hikari:
+      pool-name:
+      minimum-idle:
+      maximum-pool-size:
+
+  ai:
+    retry:
+      max-attempts:
+    openai:
+      base-url:
+      api-key:
+      chat:
+        options:
+          model:
+          temperature:
