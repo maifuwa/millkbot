@@ -1,13 +1,14 @@
 package com.bigboss.millkbot.util
 
 import org.ntqqrev.milky.IncomingSegment
+import org.ntqqrev.milky.OutgoingSegment
 import org.ntqqrev.milky.faceId
 import org.ntqqrev.milky.summary
 import org.ntqqrev.milky.text
 
 object MessageTextConverter {
 
-    private val faceMap = mapOf(
+    private val faceMap: Map<String, String> = mapOf(
         "0" to "/惊讶",
         "1" to "/撇嘴",
         "2" to "/色",
@@ -128,6 +129,37 @@ object MessageTextConverter {
         "339" to "/略略略"
     )
 
+    private val reverseFaceMap: Map<String, String> = faceMap.entries.associate { (k, v) -> v to k }
+
+    private val facePattern = Regex("(/[^/\\[]+)\\[表情]")
+
+    fun parseToOutgoingSegments(message: String): List<OutgoingSegment> {
+        val segments = mutableListOf<OutgoingSegment>()
+        var lastIndex = 0
+
+        for (match in facePattern.findAll(message)) {
+            if (match.range.first > lastIndex) {
+                val text = message.substring(lastIndex, match.range.first)
+                if (text.isNotEmpty()) {
+                    segments.add(OutgoingSegment.Text(OutgoingSegment.Text.Data(text)))
+                }
+            }
+            val faceName = match.groupValues[1]
+            val faceId = reverseFaceMap[faceName]
+            if (faceId != null) {
+                segments.add(OutgoingSegment.Face(OutgoingSegment.Face.Data(faceId)))
+            } else {
+                segments.add(OutgoingSegment.Text(OutgoingSegment.Text.Data(match.value)))
+            }
+            lastIndex = match.range.last + 1
+        }
+
+        if (lastIndex < message.length) {
+            segments.add(OutgoingSegment.Text(OutgoingSegment.Text.Data(message.substring(lastIndex))))
+        }
+
+        return segments.ifEmpty { listOf(OutgoingSegment.Text(OutgoingSegment.Text.Data(message))) }
+    }
 
     fun toTextForFriend(message: List<IncomingSegment>): String {
         return message.joinToString("") { segment ->

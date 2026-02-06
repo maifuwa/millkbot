@@ -2,6 +2,7 @@ package com.bigboss.millkbot.plug.impl
 
 import com.bigboss.millkbot.plug.MessagePlugin
 import com.bigboss.millkbot.plug.ProcessedMessage
+import com.bigboss.millkbot.service.AgentService
 import org.ntqqrev.milky.IncomingMessage
 import org.ntqqrev.milky.MilkyClient
 import org.ntqqrev.milky.sendPrivateMessage
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Component
 @Component
 class FriendChatPlugin(
     private val milkyClient: MilkyClient,
-    private val agentService: com.bigboss.millkbot.service.AgentService
+    private val agentService: AgentService,
 ) : MessagePlugin<IncomingMessage.Friend> {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -23,19 +24,16 @@ class FriendChatPlugin(
         logger.debug("handle message from {}", senderId)
 
         val content = msg.convertedText ?: return false
-        val segments = agentService.chat(senderId, senderName, content)
 
-        if (segments.isEmpty()) {
-            logger.warn("Agent service returned empty response for user {}", senderId)
+        try {
+            agentService.chat(senderId, senderName, content)
+        } catch (e: Exception) {
+            logger.error("Agent service error for user {}", senderId, e)
             milkyClient.sendPrivateMessage(senderId) {
                 text("抱歉，我暂时无法回复您的消息，请稍后再试。")
             }
-        } else {
-            milkyClient.sendPrivateMessage(senderId, segments)
         }
 
         return false
     }
-
-
 }
