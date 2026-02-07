@@ -7,12 +7,12 @@ object MessageTextConverter {
 
     fun buildAgentContextMessage(user: User): String {
         return """
-            userInfo :
-                id: ${user.id}
-                name: ${user.name}
-                relation: ${user.relation}
-                ${if (user.customPrompt!!.isBlank()) "" else "custom prompt: " + user.customPrompt}
-        """.trimIndent()
+            |userInfo:
+            |  id: ${user.id}
+            |  name: ${user.name}
+            |  relation: ${user.relation}
+            |  ${if (user.customPrompt!!.isBlank()) "" else "custom prompt: " + user.customPrompt}
+        """.trimMargin()
     }
 
     private val faceMap: Map<String, String> = FaceEmojiCatalog.faceIdToName

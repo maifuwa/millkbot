@@ -50,10 +50,10 @@ class UserService(
     }
 
     @Transactional
-    fun updateMaster(user: User, changeId: Long): Boolean {
-        if (user.relation != "Master") return false
+    fun updateUserRelation(operator: User, changeId: Long, relation: String): Boolean {
+        if (operator.relation != "Master") return false
         return sqlClient.createUpdate(User::class) {
-            set(table.relation, "Master")
+            set(table.relation, relation)
             where(table.id eq changeId)
         }.execute() > 0
     }
