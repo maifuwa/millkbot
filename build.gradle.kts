@@ -41,6 +41,8 @@ dependencies {
     ksp("org.babyfish.jimmer:jimmer-ksp:0.10.6")
     implementation("org.babyfish.jimmer:jimmer-spring-boot-starter:0.10.6")
 
+    // quartz
+    implementation("org.springframework.boot:spring-boot-starter-quartz")
 
     // milky
     implementation("org.ntqqrev:milky-kt-sdk:1.1.0")

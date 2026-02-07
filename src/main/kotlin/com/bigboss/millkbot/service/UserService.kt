@@ -8,6 +8,7 @@ import org.babyfish.jimmer.sql.ast.mutation.SaveMode
 import org.babyfish.jimmer.sql.kt.KSqlClient
 import org.babyfish.jimmer.sql.kt.ast.expression.count
 import org.babyfish.jimmer.sql.kt.ast.expression.eq
+import org.babyfish.jimmer.sql.kt.findById
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -34,6 +35,11 @@ class UserService(
     }
 
     @Transactional
+    fun findUserById(id: Long): User? {
+        return sqlClient.findById(id)
+    }
+
+    @Transactional
     fun createMaster(id: Long): Boolean {
         if (hasMaster()) return false
         return sqlClient.createUpdate(User::class) {
@@ -47,6 +53,14 @@ class UserService(
             where(table.relation eq "Master")
             select(count(table.id))
         }.execute().single() > 0
+    }
+
+    @Transactional
+    fun findMaster(): List<Long> {
+        return sqlClient.createQuery(User::class) {
+            where(table.relation eq "Master")
+            select(table.id)
+        }.execute()
     }
 
     @Transactional

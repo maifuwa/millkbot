@@ -18,10 +18,7 @@ class AgentService(
 ) {
 
     suspend fun chat(user: User, message: String): List<String> {
-
-        val userMessage = message.trim()
         val agentContextMessage = MessageTextConverter.buildAgentContextMessage(user)
-
         val getCurrentTimeTool = GetCurrentTimeTool()
         val conversationId = "${user.relation}-${user.id}"
 
@@ -31,7 +28,26 @@ class AgentService(
                     advisor.param(ChatMemory.CONVERSATION_ID, conversationId)
                 }
                 .messages(SystemMessage(agentContextMessage))
-                .user(userMessage)
+                .user(message.trim())
+                .tools(getCurrentTimeTool)
+                .call()
+                .entity(replyListOutputConverter)
+                ?: emptyList()
+        }
+
+        return replies
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+    }
+
+    suspend fun deal(user: User, taskContent: String): List<String> {
+        val agentContextMessage = MessageTextConverter.buildAgentContextMessage(user)
+        val getCurrentTimeTool = GetCurrentTimeTool()
+
+        val replies = withContext(Dispatchers.IO) {
+            chatClient.prompt()
+                .messages(SystemMessage(agentContextMessage))
+                .user(taskContent.trim())
                 .tools(getCurrentTimeTool)
                 .call()
                 .entity(replyListOutputConverter)

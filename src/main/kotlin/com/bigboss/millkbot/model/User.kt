@@ -2,6 +2,7 @@ package com.bigboss.millkbot.model
 
 import org.babyfish.jimmer.sql.Entity
 import org.babyfish.jimmer.sql.Id
+import org.babyfish.jimmer.sql.OneToMany
 import org.babyfish.jimmer.sql.Table
 import java.time.LocalDateTime
 
@@ -21,4 +22,7 @@ interface User {
     val createdAt: LocalDateTime
 
     val updatedAt: LocalDateTime
+
+    @OneToMany(mappedBy = "user")
+    val scheduledTask: List<ScheduledTask>
 }
