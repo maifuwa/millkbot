@@ -21,13 +21,16 @@ class FriendChatPlugin(
 
     override suspend fun handle(msg: ProcessedMessage<IncomingMessage.Friend>): Boolean {
         val senderId = msg.original.senderId
-        val senderName = msg.original.friend.nickname
         logger.debug("handle message from {}", senderId)
 
         val content = msg.convertedText ?: return false
+        val user = msg.user ?: run {
+            logger.warn("Missing user context for sender {}", senderId)
+            return false
+        }
 
         try {
-            val replies = agentService.chat(senderId, senderName, content)
+            val replies = agentService.chat(user, content)
             if (replies.isNotEmpty()) {
                 replies.forEach { reply ->
                     val segments = MessageTextConverter.parseToOutgoingSegments(reply)

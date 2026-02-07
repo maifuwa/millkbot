@@ -1,5 +1,6 @@
 package com.bigboss.millkbot.plug.impl
 
+import com.bigboss.millkbot.model.User
 import com.bigboss.millkbot.plug.MessagePlugin
 import com.bigboss.millkbot.plug.ProcessedMessage
 import com.bigboss.millkbot.service.UserService
@@ -25,6 +26,7 @@ class FriendCommandPlugin(
         logger.debug("handle message from {}", msg.original.senderId)
 
         val content = msg.convertedText?.trim() ?: return true
+        val user = msg.user ?: return true
 
         if (!content.startsWith("#")) {
             return true
@@ -46,7 +48,7 @@ class FriendCommandPlugin(
         val response = when (command) {
             "create_master" -> handleCreateMaster(senderId)
             "create_prompt" -> handleCreatePrompt(senderId, args)
-            "update_user" -> handleUpdateUser(senderId, args)
+            "update_user" -> handleUpdateUser(user, args)
             "all", "help" -> handleAll()
             else -> "未知命令，请使用 #all 查看所有可用命令"
         }
@@ -59,7 +61,6 @@ class FriendCommandPlugin(
     }
 
     private fun handleCreateMaster(senderId: Long): String {
-        userService.getUser(senderId, "")
         return if (userService.createMaster(senderId)) {
             "创建 Master 用户成功"
         } else {
@@ -71,7 +72,6 @@ class FriendCommandPlugin(
         if (prompt.isNullOrBlank()) {
             return "用法: #create_prompt <prompt>"
         }
-        userService.getUser(senderId, "")
         return if (userService.createPrompt(senderId, prompt)) {
             "设置自定义提示词成功"
         } else {
@@ -79,7 +79,7 @@ class FriendCommandPlugin(
         }
     }
 
-    private fun handleUpdateUser(senderId: Long, updateArgs: String?): String {
+    private fun handleUpdateUser(operator: User, updateArgs: String?): String {
         if (updateArgs.isNullOrBlank()) {
             return "用法: #update_user <user_id> <relation>"
         }
@@ -97,8 +97,7 @@ class FriendCommandPlugin(
             return "用法: #update_user <user_id> <relation>"
         }
 
-        val user = userService.getUser(senderId, "")
-        return if (userService.updateUserRelation(user, targetUserId, relation)) {
+        return if (userService.updateUserRelation(operator, targetUserId, relation)) {
             "更新用户关系成功"
         } else {
             "更新用户关系失败"
