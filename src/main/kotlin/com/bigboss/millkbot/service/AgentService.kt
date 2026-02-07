@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ntqqrev.milky.MilkyClient
 import org.springframework.ai.chat.client.ChatClient
+import org.springframework.ai.chat.memory.ChatMemory
 import org.springframework.stereotype.Service
 
 @Service
@@ -31,9 +32,13 @@ class AgentService(
 
         val sendMessageTool = SendMessageTool(milkyClient, id)
         val getCurrentTimeTool = GetCurrentTimeTool()
+        val conversationId = "friend-$id"
 
         withContext(Dispatchers.IO) {
             chatClient.prompt()
+                .advisors { advisor ->
+                    advisor.param(ChatMemory.CONVERSATION_ID, conversationId)
+                }
                 .user(userMessage)
                 .tools(sendMessageTool, getCurrentTimeTool)
                 .call()

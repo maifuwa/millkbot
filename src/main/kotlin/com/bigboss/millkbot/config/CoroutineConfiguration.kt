@@ -29,8 +29,8 @@ class CoroutineConfiguration(
     }
 
     @Bean
-    fun springDispatcher(executor: Executor): CoroutineDispatcher {
-        return (executor as ThreadPoolTaskExecutor).asCoroutineDispatcher()
+    fun springDispatcher(taskExecutor: Executor): CoroutineDispatcher {
+        return (taskExecutor as ThreadPoolTaskExecutor).asCoroutineDispatcher()
     }
 
     @Bean

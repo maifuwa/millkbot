@@ -8,7 +8,6 @@ import org.babyfish.jimmer.sql.ast.mutation.SaveMode
 import org.babyfish.jimmer.sql.kt.KSqlClient
 import org.babyfish.jimmer.sql.kt.ast.expression.count
 import org.babyfish.jimmer.sql.kt.ast.expression.eq
-import org.babyfish.jimmer.sql.kt.createQuery
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -19,7 +18,7 @@ class UserService(
 
     @Transactional
     fun getUser(id: Long, name: String): User {
-        var user = sqlClient.createQuery {
+        var user = sqlClient.createQuery(User::class) {
             where(table.id eq id)
             select(table)
         }.execute().singleOrNull()

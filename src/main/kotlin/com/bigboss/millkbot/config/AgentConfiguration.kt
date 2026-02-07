@@ -1,8 +1,10 @@
 package com.bigboss.millkbot.config
 
 import org.springframework.ai.chat.client.ChatClient
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor
-import org.springframework.ai.chat.messages.UserMessage
+import org.springframework.ai.chat.memory.ChatMemory
+import org.springframework.ai.chat.memory.MessageWindowChatMemory
 import org.springframework.ai.chat.prompt.SystemPromptTemplate
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -19,10 +21,24 @@ class AgentConfiguration {
     }
 
     @Bean
-    fun chatClient(builder: ChatClient.Builder, systemPrompt: SystemPromptTemplate): ChatClient {
+    fun chatClient(
+        builder: ChatClient.Builder,
+        systemPrompt: SystemPromptTemplate,
+        chatMemory: ChatMemory,
+    ): ChatClient {
+        val chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build()
+
         return builder
             .defaultSystem(systemPrompt.template)
-            .defaultAdvisors(SimpleLoggerAdvisor())
+            .defaultAdvisors(SimpleLoggerAdvisor(), chatMemoryAdvisor)
+            .build()
+    }
+
+    @Bean
+    fun chatMemory(chatMemoryRepository: org.springframework.ai.chat.memory.ChatMemoryRepository): ChatMemory {
+        return MessageWindowChatMemory.builder()
+            .chatMemoryRepository(chatMemoryRepository)
+            .maxMessages(20)
             .build()
     }
 }
