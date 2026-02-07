@@ -7,8 +7,8 @@ import com.bigboss.millkbot.util.MessageTextConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.springframework.ai.chat.client.ChatClient
-import org.springframework.ai.chat.messages.SystemMessage
 import org.springframework.ai.chat.memory.ChatMemory
+import org.springframework.ai.chat.messages.SystemMessage
 import org.springframework.stereotype.Service
 
 @Service

@@ -33,7 +33,7 @@ class ReplyListOutputConverter(
             |按发送顺序填写回复内容，例如：["你好", "我在，有什么可以帮你？"]
         """.trimMargin()
     }
-    
+
     override fun convert(text: String): List<String> {
         val sourceText = text.trim()
         if (sourceText.isBlank()) {

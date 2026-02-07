@@ -9,11 +9,7 @@ import org.babyfish.jimmer.sql.kt.KSqlClient
 import org.babyfish.jimmer.sql.kt.ast.expression.asc
 import org.babyfish.jimmer.sql.kt.ast.expression.eq
 import org.springframework.ai.chat.memory.ChatMemoryRepository
-import org.springframework.ai.chat.messages.AssistantMessage
-import org.springframework.ai.chat.messages.Message
-import org.springframework.ai.chat.messages.MessageType
-import org.springframework.ai.chat.messages.SystemMessage
-import org.springframework.ai.chat.messages.UserMessage
+import org.springframework.ai.chat.messages.*
 import org.springframework.stereotype.Component
 
 @Component

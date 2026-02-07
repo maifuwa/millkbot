@@ -2,6 +2,7 @@ package com.bigboss.millkbot.schedule
 
 import com.bigboss.millkbot.model.ScheduledTask
 import com.bigboss.millkbot.model.enabled
+import com.bigboss.millkbot.model.fetchBy
 import com.bigboss.millkbot.model.id
 import org.babyfish.jimmer.sql.ast.mutation.SaveMode
 import org.babyfish.jimmer.sql.kt.KSqlClient
@@ -31,28 +32,13 @@ class ScheduleService(
         }, SaveMode.INSERT_ONLY).modifiedEntity
 
         return try {
-            if (!scheduler.isStarted) scheduler.start()
-
             val jobKey = JobKey.jobKey(task.id.toString(), task.createdBy)
             val triggerKey = TriggerKey.triggerKey(task.id.toString(), task.createdBy)
 
             if (scheduler.checkExists(jobKey) || scheduler.checkExists(triggerKey)) {
                 true
             } else {
-                val jobDetail = JobBuilder.newJob(AgentTask::class.java)
-                    .withIdentity(task.id.toString(), task.createdBy)
-                    .usingJobData("userId", task.user.id)
-                    .usingJobData("taskId", task.id)
-                    .usingJobData("createdBy", task.createdBy)
-                    .build()
-
-                val trigger = TriggerBuilder.newTrigger()
-                    .withIdentity(task.id.toString(), task.createdBy)
-                    .withSchedule(CronScheduleBuilder.cronSchedule(task.cronExpr))
-                    .build()
-
-                scheduler.scheduleJob(jobDetail, trigger)
-                true
+                scheduleJob(task)
             }
         } catch (e: Exception) {
             logger.error("Failed to schedule task id=${task.id}, cron=${task.cronExpr}", e)
@@ -78,6 +64,106 @@ class ScheduleService(
 
     fun findTaskById(id: Long): ScheduledTask? {
         return sqlClient.findById(id)
+    }
+
+    fun findEnabledTasks(): List<ScheduledTask> {
+        return sqlClient.createQuery(ScheduledTask::class) {
+            where(table.enabled eq true)
+            select(table.fetchBy {
+                allScalarFields()
+                user {
+                    allScalarFields()
+                }
+            })
+        }.execute()
+    }
+
+    @Transactional
+    fun deleteExpiredTasks(): Int {
+        val allTasks = sqlClient.createQuery(ScheduledTask::class) {
+            select(table.fetchBy {
+                allScalarFields()
+                user {
+                    allScalarFields()
+                }
+            })
+        }.execute()
+
+        var deletedCount = 0
+        val now = java.time.LocalDateTime.now()
+
+        allTasks.forEach { task ->
+            try {
+                if (isTaskExpired(task.cronExpr, now)) {
+                    if (deleteTask(task)) {
+                        deletedCount++
+                        logger.info("删除过期任务: id=${task.id}, cron=${task.cronExpr}")
+                    }
+                }
+            } catch (e: Exception) {
+                logger.error("检查任务是否过期时出错: id=${task.id}", e)
+            }
+        }
+
+        return deletedCount
+    }
+
+    private fun isTaskExpired(cronExpr: String, now: java.time.LocalDateTime): Boolean {
+        val parts = cronExpr.trim().split(Regex("\\s+"))
+
+        if (parts.size == 7) {
+            val year = parts[6].toIntOrNull() ?: return false
+            val month = parts[4].toIntOrNull() ?: return false
+            val day = parts[3].toIntOrNull() ?: return false
+            val hour = parts[2].toIntOrNull() ?: return false
+            val minute = parts[1].toIntOrNull() ?: return false
+
+            val taskDateTime = java.time.LocalDateTime.of(year, month, day, hour, minute)
+
+            return taskDateTime.isBefore(now)
+        }
+
+        return false
+    }
+
+    fun loadTask(task: ScheduledTask): Boolean {
+        return try {
+            val jobKey = JobKey.jobKey(task.id.toString(), task.createdBy)
+            val triggerKey = TriggerKey.triggerKey(task.id.toString(), task.createdBy)
+
+            if (scheduler.checkExists(jobKey)) {
+                scheduler.deleteJob(jobKey)
+            }
+            if (scheduler.checkExists(triggerKey)) {
+                scheduler.unscheduleJob(triggerKey)
+            }
+
+            scheduleJob(task)
+            logger.info("Successfully loaded task id=${task.id}, cron=${task.cronExpr}")
+            true
+        } catch (e: Exception) {
+            logger.error("Failed to load task id=${task.id}, cron=${task.cronExpr}", e)
+            false
+        }
+    }
+
+    private fun scheduleJob(task: ScheduledTask): Boolean {
+        if (!scheduler.isStarted) scheduler.start()
+
+        val jobDetail = JobBuilder.newJob(AgentTask::class.java)
+            .withIdentity(task.id.toString(), task.createdBy)
+            .usingJobData("userId", task.user.id)
+            .usingJobData("taskId", task.id)
+            .usingJobData("createdBy", task.createdBy)
+            .build()
+
+        val trigger = TriggerBuilder.newTrigger()
+            .withIdentity(task.id.toString(), task.createdBy)
+            .withSchedule(CronScheduleBuilder.cronSchedule(task.cronExpr))
+            .build()
+
+        scheduler.scheduleJob(jobDetail, trigger)
+        return true
     }
 
     private fun disableTask(taskId: Long): Boolean {
