@@ -1,11 +1,12 @@
 package com.bigboss.millkbot.service
 
+import com.bigboss.millkbot.converter.ReplyListOutputConverter
 import com.bigboss.millkbot.tool.GetCurrentTimeTool
-import com.bigboss.millkbot.tool.SendMessageTool
+import com.bigboss.millkbot.util.MessageTextConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.ntqqrev.milky.MilkyClient
 import org.springframework.ai.chat.client.ChatClient
+import org.springframework.ai.chat.messages.SystemMessage
 import org.springframework.ai.chat.memory.ChatMemory
 import org.springframework.stereotype.Service
 
@@ -13,36 +14,35 @@ import org.springframework.stereotype.Service
 class AgentService(
     private val chatClient: ChatClient,
     private val userService: UserService,
-    private val milkyClient: MilkyClient,
 ) {
 
-    suspend fun chat(id: Long, name: String, message: String) {
+    suspend fun chat(id: Long, name: String, message: String): List<String> {
         val user = withContext(Dispatchers.IO) {
             userService.getUser(id, name)
         }
 
-        val userMessage = """
-            userInfo :
-                id: ${user.id}
-                name: ${user.name}
-                relation: ${user.relation}
-                ${if (user.customPrompt == null) "" else "custom prompt: " + user.customPrompt}
-            message: ${message.trimIndent()}
-        """.trimIndent()
+        val userMessage = message.trim()
+        val agentContextMessage = MessageTextConverter.buildAgentContextMessage(user)
 
-        val sendMessageTool = SendMessageTool(milkyClient, id)
+        val outputConverter = ReplyListOutputConverter()
         val getCurrentTimeTool = GetCurrentTimeTool()
         val conversationId = "friend-$id"
 
-        withContext(Dispatchers.IO) {
+        val replies = withContext(Dispatchers.IO) {
             chatClient.prompt()
                 .advisors { advisor ->
                     advisor.param(ChatMemory.CONVERSATION_ID, conversationId)
                 }
+                .messages(SystemMessage(agentContextMessage))
                 .user(userMessage)
-                .tools(sendMessageTool, getCurrentTimeTool)
+                .tools(getCurrentTimeTool)
                 .call()
-                .content()
+                .entity(outputConverter)
+                ?: emptyList()
         }
+
+        return replies
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
     }
 }

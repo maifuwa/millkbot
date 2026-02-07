@@ -1,133 +1,21 @@
 package com.bigboss.millkbot.util
 
-import org.ntqqrev.milky.IncomingSegment
-import org.ntqqrev.milky.OutgoingSegment
-import org.ntqqrev.milky.faceId
-import org.ntqqrev.milky.summary
-import org.ntqqrev.milky.text
+import com.bigboss.millkbot.model.User
+import org.ntqqrev.milky.*
 
 object MessageTextConverter {
 
-    private val faceMap: Map<String, String> = mapOf(
-        "0" to "/惊讶",
-        "1" to "/撇嘴",
-        "2" to "/色",
-        "3" to "/发呆",
-        "4" to "/得意",
-        "5" to "/流泪",
-        "6" to "/害羞",
-        "7" to "/闭嘴",
-        "8" to "/睡",
-        "9" to "/大哭",
-        "10" to "/尴尬",
-        "11" to "/发怒",
-        "12" to "/调皮",
-        "13" to "/呲牙",
-        "14" to "/微笑",
-        "15" to "/难过",
-        "16" to "/酷",
-        "18" to "/抓狂",
-        "19" to "/吐",
-        "20" to "/偷笑",
-        "21" to "/可爱",
-        "22" to "/白眼",
-        "23" to "/傲慢",
-        "24" to "/饥饿",
-        "25" to "/困",
-        "26" to "/惊恐",
-        "27" to "/流汗",
-        "28" to "/憨笑",
-        "29" to "/悠闲",
-        "30" to "/奋斗",
-        "31" to "/咒骂",
-        "32" to "/疑问",
-        "33" to "/嘘",
-        "34" to "/晕",
-        "35" to "/疯了",
-        "36" to "/衰",
-        "37" to "/骷髅",
-        "38" to "/敲打",
-        "39" to "/再见",
-        "53" to "/蛋糕",
-        "60" to "/咖啡",
-        "63" to "/玫瑰",
-        "66" to "/爱心",
-        "74" to "/太阳",
-        "75" to "/月亮",
-        "76" to "/赞",
-        "77" to "/踩",
-        "78" to "/握手",
-        "79" to "/胜利",
-        "85" to "/飞吻",
-        "86" to "/怄火",
-        "89" to "/西瓜",
-        "96" to "/冷汗",
-        "97" to "/擦汗",
-        "98" to "/抠鼻",
-        "99" to "/鼓掌",
-        "100" to "/糗大了",
-        "101" to "/坏笑",
-        "102" to "/左哼哼",
-        "103" to "/右哼哼",
-        "104" to "/哈欠",
-        "105" to "/鄙视",
-        "106" to "/委屈",
-        "107" to "/快哭了",
-        "108" to "/阴险",
-        "109" to "/亲亲",
-        "110" to "/吓",
-        "111" to "/可怜",
-        "172" to "/菜刀",
-        "173" to "/啤酒",
-        "174" to "/篮球",
-        "175" to "/乒乓",
-        "178" to "/示爱",
-        "179" to "/瓢虫",
-        "180" to "/抱拳",
-        "181" to "/勾引",
-        "182" to "/笑哭",
-        "183" to "/我最美",
-        "212" to "/猪头",
-        "214" to "/红包",
-        "264" to "/捂脸",
-        "265" to "/耶",
-        "266" to "/奸笑",
-        "267" to "/机智",
-        "268" to "/皱眉",
-        "269" to "/暗中观察",
-        "270" to "/加油",
-        "271" to "/吃瓜",
-        "277" to "/无眼笑",
-        "278" to "/敬礼",
-        "281" to "/裂开",
-        "282" to "/加油加油",
-        "284" to "/脑阔疼",
-        "285" to "/沧桑",
-        "287" to "/悠哉",
-        "289" to "/打脸",
-        "290" to "/哦",
-        "293" to "/睁眼",
-        "294" to "/敲开心",
-        "297" to "/汪汪",
-        "298" to "/汗",
-        "299" to "/打call",
-        "305" to "/变形",
-        "306" to "/嗑瓜子",
-        "307" to "/惊喜",
-        "314" to "/生气",
-        "315" to "/喝彩",
-        "318" to "/天啊",
-        "319" to "/Emm",
-        "320" to "/社会社会",
-        "322" to "/旺柴",
-        "324" to "/好的",
-        "325" to "/打球",
-        "326" to "/怪我咯",
-        "336" to "/喵喵",
-        "337" to "/求红包",
-        "338" to "/谢谢老板",
-        "339" to "/略略略"
-    )
+    fun buildAgentContextMessage(user: User): String {
+        return """
+            userInfo :
+                id: ${user.id}
+                name: ${user.name}
+                relation: ${user.relation}
+                ${if (user.customPrompt!!.isBlank()) "" else "custom prompt: " + user.customPrompt}
+        """.trimIndent()
+    }
+
+    private val faceMap: Map<String, String> = FaceEmojiCatalog.faceIdToName
 
     private val reverseFaceMap: Map<String, String> = faceMap.entries.associate { (k, v) -> v to k }
 
