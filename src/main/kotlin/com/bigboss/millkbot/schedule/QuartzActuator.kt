@@ -61,9 +61,10 @@ class QuartzActuator(
         masterIds.forEach { userId ->
             try {
                 generateDailyTasksForUser(userId, today)
-                logger.info("为用户 $userId 生成每日任务成功")
+                logger.debug("为用户 {} 生成每日任务成功", userId)
             } catch (e: Exception) {
-                logger.error("为用户 $userId 生成每日任务失败", e)
+                logger.error("生成每日任务失败", e)
+                logger.debug("生成每日任务失败: userId={}", userId)
             }
         }
 

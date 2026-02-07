@@ -25,7 +25,8 @@ class FriendChatPlugin(
 
         val content = msg.convertedText ?: return false
         val user = msg.user ?: run {
-            logger.warn("Missing user context for sender {}", senderId)
+            logger.warn("Missing user context for sender")
+            logger.debug("Missing user context for sender {}", senderId)
             return false
         }
 
@@ -38,7 +39,8 @@ class FriendChatPlugin(
                 }
             }
         } catch (e: Exception) {
-            logger.error("Agent service error for user {}", senderId, e)
+            logger.error("Agent service error", e)
+            logger.debug("Agent service error for user {}", senderId)
             milkyClient.sendPrivateMessage(senderId) {
                 text("抱歉，我暂时无法回复您的消息，请稍后再试。")
             }

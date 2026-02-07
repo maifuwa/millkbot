@@ -18,11 +18,11 @@ class MillkbotApplicationTests {
 
     @Test
     fun contextLoads() {
-        val user = sqlClient
+        val users = sqlClient
             .createQuery(User::class) {
                 select(table)
             }.execute()
-        logger.info(user.toString())
+        logger.debug("Loaded {} users in contextLoads()", users.size)
     }
 
 }

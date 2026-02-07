@@ -58,7 +58,8 @@ class ScheduleService(
             else -> scheduler.unscheduleJob(triggerKey) && scheduler.deleteJob(jobKey)
         }
     } catch (e: Exception) {
-        logger.error("Failed to delete task id=${task.id}, group=${task.createdBy}", e)
+        logger.error("Failed to delete task id=${task.id}", e)
+        logger.debug("Failed to delete task details: taskId={}, group={}", task.id, task.createdBy)
         false
     }
 

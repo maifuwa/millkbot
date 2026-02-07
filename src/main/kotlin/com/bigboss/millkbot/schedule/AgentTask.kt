@@ -30,7 +30,7 @@ class AgentTask(
         val user = userService.findUserById(userId)!!
         val task = scheduleService.findTaskById(taskId)!!
 
-        logger.info("Quartz task fire: userId={}, taskId={}, createdBy={}", userId, taskId, task.createdBy)
+        logger.debug("Quartz task fire: userId={}, taskId={}, createdBy={}", userId, taskId, task.createdBy)
 
         if (task.enabled) {
             processAndSendTask(user, task)
@@ -40,16 +40,17 @@ class AgentTask(
     }
 
     private fun processAndSendTask(user: User, task: ScheduledTask) {
-        try {
-            applicationScope.launch {
+        applicationScope.launch {
+            try {
                 val replies = agentService.deal(user, task.content)
                 replies.forEach { reply ->
                     val segments = MessageTextConverter.parseToOutgoingSegments(reply)
                     milkyClient.sendPrivateMessage(user.id, segments)
                 }
+            } catch (e: Exception) {
+                logger.error("Failed to process and send scheduled task, taskId={}", task.id, e)
+                logger.debug("Failed to process and send scheduled task details: userId={}, taskId={}", user.id, task.id)
             }
-        } catch (e: Exception) {
-            logger.error("Failed to process and send scheduled task, userId={}, taskId={}", user.id, task.id, e)
         }
     }
 
