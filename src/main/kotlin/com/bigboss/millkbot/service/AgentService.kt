@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service
 @Service
 class AgentService(
     private val chatClient: ChatClient,
+    private val replyListOutputConverter: ReplyListOutputConverter,
 ) {
 
     suspend fun chat(user: User, message: String): List<String> {
@@ -21,7 +22,6 @@ class AgentService(
         val userMessage = message.trim()
         val agentContextMessage = MessageTextConverter.buildAgentContextMessage(user)
 
-        val outputConverter = ReplyListOutputConverter()
         val getCurrentTimeTool = GetCurrentTimeTool()
         val conversationId = "friend-${user.id}"
 
@@ -34,7 +34,7 @@ class AgentService(
                 .user(userMessage)
                 .tools(getCurrentTimeTool)
                 .call()
-                .entity(outputConverter)
+                .entity(replyListOutputConverter)
                 ?: emptyList()
         }
 

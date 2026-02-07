@@ -1,9 +1,15 @@
 package com.bigboss.millkbot.converter
 
 import com.bigboss.millkbot.util.FaceEmojiCatalog
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.ai.converter.ListOutputConverter
+import org.springframework.stereotype.Component
 
-class ReplyListOutputConverter : ListOutputConverter() {
+@Component
+class ReplyListOutputConverter(
+    private val objectMapper: ObjectMapper,
+) : ListOutputConverter() {
 
     override fun getFormat(): String {
         return """
@@ -26,5 +32,18 @@ class ReplyListOutputConverter : ListOutputConverter() {
             |数组长度尽量短。
             |按发送顺序填写回复内容，例如：["你好", "我在，有什么可以帮你？"]
         """.trimMargin()
+    }
+    
+    override fun convert(text: String): List<String> {
+        val sourceText = text.trim()
+        if (sourceText.isBlank()) {
+            return emptyList()
+        }
+
+        return runCatching {
+            objectMapper.readValue(sourceText, object : TypeReference<List<String>>() {})
+        }.getOrElse {
+            listOf(sourceText)
+        }
     }
 }
