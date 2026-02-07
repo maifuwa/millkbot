@@ -23,7 +23,7 @@ class AgentService(
         val agentContextMessage = MessageTextConverter.buildAgentContextMessage(user)
 
         val getCurrentTimeTool = GetCurrentTimeTool()
-        val conversationId = "friend-${user.id}"
+        val conversationId = "${user.relation}-${user.id}"
 
         val replies = withContext(Dispatchers.IO) {
             chatClient.prompt()
