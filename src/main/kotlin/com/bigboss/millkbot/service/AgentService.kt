@@ -2,6 +2,7 @@ package com.bigboss.millkbot.service
 
 import com.bigboss.millkbot.converter.ReplyListOutputConverter
 import com.bigboss.millkbot.model.User
+import com.bigboss.millkbot.tool.DuckDuckGoSearchTool
 import com.bigboss.millkbot.tool.GetCurrentTimeTool
 import com.bigboss.millkbot.util.MessageTextConverter
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +21,7 @@ class AgentService(
     suspend fun chat(user: User, message: String): List<String> {
         val agentContextMessage = MessageTextConverter.buildAgentContextMessage(user)
         val getCurrentTimeTool = GetCurrentTimeTool()
+        val duckDuckGoSearchTool = DuckDuckGoSearchTool()
         val conversationId = "${user.relation}-${user.id}"
 
         val replies = withContext(Dispatchers.IO) {
@@ -29,7 +31,7 @@ class AgentService(
                 }
                 .messages(SystemMessage(agentContextMessage))
                 .user(message.trim())
-                .tools(getCurrentTimeTool)
+                .tools(getCurrentTimeTool, duckDuckGoSearchTool)
                 .call()
                 .entity(replyListOutputConverter)
                 ?: emptyList()
@@ -43,12 +45,13 @@ class AgentService(
     suspend fun deal(user: User, taskContent: String): List<String> {
         val agentContextMessage = MessageTextConverter.buildAgentContextMessage(user)
         val getCurrentTimeTool = GetCurrentTimeTool()
+        val duckDuckGoSearchTool = DuckDuckGoSearchTool()
 
         val replies = withContext(Dispatchers.IO) {
             chatClient.prompt()
                 .messages(SystemMessage(agentContextMessage))
                 .user(taskContent.trim())
-                .tools(getCurrentTimeTool)
+                .tools(getCurrentTimeTool, duckDuckGoSearchTool)
                 .call()
                 .entity(replyListOutputConverter)
                 ?: emptyList()
