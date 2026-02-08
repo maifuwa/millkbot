@@ -5,13 +5,27 @@ import org.ntqqrev.milky.*
 
 object MessageTextConverter {
 
-    fun buildAgentContextMessage(user: User): String {
+    fun buildChatMessage(user: User): String {
         return """
             |userInfo:
             |  id: ${user.id}
             |  name: ${user.name}
             |  relation: ${user.relation}
             |  ${if (user.customPrompt!!.isBlank()) "" else "custom prompt: " + user.customPrompt}
+        """.trimMargin()
+    }
+
+    fun buildDealChatMessage(user: User, task: String): String {
+        return """
+            |userInfo:
+            |  id: ${user.id}
+            |  name: ${user.name}
+            |  relation: ${user.relation}
+            |  ${if (user.customPrompt!!.isBlank()) "" else "custom prompt: " + user.customPrompt}
+            |
+            |[由${user.name}日程触发](agent task)
+            |taskInfo:
+            |  content: $task
         """.trimMargin()
     }
 

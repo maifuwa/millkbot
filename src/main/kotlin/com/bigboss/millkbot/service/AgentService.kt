@@ -17,13 +17,13 @@ class AgentService(
 ) {
 
     suspend fun chat(user: User, message: String): List<String> {
-        val agentContextMessage = MessageTextConverter.buildAgentContextMessage(user)
+        val agentContextMessage = MessageTextConverter.buildChatMessage(user)
         val conversationId = "${user.relation}-${user.id}"
 
         val replies = withContext(Dispatchers.IO) {
             chatClient.prompt()
-                .advisors { advisor ->
-                    advisor.param(ChatMemory.CONVERSATION_ID, conversationId)
+                .advisors { spec ->
+                    spec.param(ChatMemory.CONVERSATION_ID, conversationId)
                 }
                 .messages(SystemMessage(agentContextMessage))
                 .user(message.trim())
@@ -38,12 +38,11 @@ class AgentService(
     }
 
     suspend fun deal(user: User, taskContent: String): List<String> {
-        val agentContextMessage = MessageTextConverter.buildAgentContextMessage(user)
+        val agentContextMessage = MessageTextConverter.buildDealChatMessage(user, taskContent.trim())
 
         val replies = withContext(Dispatchers.IO) {
             chatClient.prompt()
                 .messages(SystemMessage(agentContextMessage))
-                .user(taskContent.trim())
                 .call()
                 .entity(replyListOutputConverter)
                 ?: emptyList()

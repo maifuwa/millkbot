@@ -1,8 +1,9 @@
 package com.bigboss.millkbot.tool
 
+import com.bigboss.millkbot.model.ScheduledTask
 import com.bigboss.millkbot.schedule.ScheduleService
-import com.bigboss.millkbot.util.DateTimeUtil
-import kotlinx.serialization.Serializable
+import com.bigboss.millkbot.util.JsonUtil
+import com.bigboss.millkbot.util.encode
 import org.slf4j.LoggerFactory
 import org.springframework.ai.tool.annotation.Tool
 import org.springframework.stereotype.Service
@@ -13,112 +14,71 @@ class ScheduleTools(private val scheduleService: ScheduleService) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @Tool(description = "获取用户的日程安排列表。返回用户所有启用的定时任务，包括执行时间（可读格式）和任务内容。当用户询问\"我的日程\"、\"我有什么安排\"、\"查看我的任务\"等问题时使用此工具。")
-    fun getUserSchedule(request: UserIdRequest): String {
-        logger.debug("Tool getUserSchedule called: userId={}", request.userId)
+    @Tool(
+        description = """
+        获取用户的日程安排列表。
+        返回用户所有启用的定时任务的JSON数组，包括任务ID、执行时间、任务内容、创建者和启用状态。
+
+        返回格式：JSON数组，每个元素包含：
+        - id: 任务ID
+        - runAt: 执行时间（LocalDateTime）
+        - content: 任务内容
+        - createdBy: 创建者
+        - enabled: 是否启用
+    """
+    )
+    fun getUserSchedule(userId: Long): String {
+        logger.debug("Tool getUserSchedule called: userId={}", userId)
 
         return try {
-            val tasks = scheduleService.findEnableTaskByUser(request.userId)
+            val tasks = scheduleService.findEnableTaskByUser(userId)
 
-            if (tasks.isEmpty()) {
-                logger.debug("Tool getUserSchedule result: no tasks for userId={}", request.userId)
-                return "您当前没有任何日程安排。"
-            }
-
-            val taskList = tasks.mapIndexed { index, task ->
-                "${index + 1}. ${DateTimeUtil.formatForDisplay(task.runAt)} - ${task.content}"
-            }.joinToString("\n")
-
-            val result = """
-                您的日程安排如下：
-
-                $taskList
-            """.trimIndent()
-
-            logger.debug("Tool getUserSchedule result: found {} tasks for userId={}", tasks.size, request.userId)
-            result
+            logger.debug("Tool getUserSchedule result: found {} tasks for userId={}", tasks.size, userId)
+            JsonUtil.encode(tasks)
         } catch (e: Exception) {
-            logger.error("Tool getUserSchedule failed: userId={} error={}", request.userId, e.message, e)
-            "获取日程失败: ${e.message}"
+            logger.error("Tool getUserSchedule failed: userId={} error={}", userId, e.message, e)
+            JsonUtil.encode(emptyList<ScheduledTask>())
         }
     }
 
-    @Tool(description = "创建用户的日程安排。用于为用户创建一次性的定时任务/日程提醒。当用户说\"提醒我...\"、\"帮我创建一个日程\"、\"明天X点提醒我...\"等时使用此工具。")
-    fun createUserSchedule(request: CreateScheduleRequest): String {
-        logger.debug(
-            "Tool createUserSchedule called: userId={}, time={}-{}-{} {}:{}, content={}",
-            request.userId, request.year, request.month, request.day, request.hour, request.minute, request.content
-        )
+    @Tool(
+        description = """
+        创建用户的日程安排。
+
+        参数说明：
+        - userId: userInfo.id
+        - runAtStr: 执行时间，格式为 "yyyy-MM-dd HH:mm:ss"
+        - content: 日程内容，格式为 “动词(+名词)”，比如：“打招呼”、“提醒喝水”
+    """
+    )
+    fun createUserSchedule(
+        userId: Long,
+        runAtStr: String,
+        content: String
+    ): String {
+        logger.debug("""Tool createUserSchedule called: userId=$userId, runAtStr=$runAtStr, content=$content""")
 
         return try {
-            if (request.month !in 1..12) {
-                return "创建日程失败：月份必须在 1-12 之间"
-            }
-            if (request.day !in 1..31) {
-                return "创建日程失败：日期必须在 1-31 之间"
-            }
-            if (request.hour !in 0..23) {
-                return "创建日程失败：小时必须在 0-23 之间"
-            }
-            if (request.minute !in 0..59) {
-                return "创建日程失败：分钟必须在 0-59 之间"
-            }
-            if (request.content.isBlank()) {
-                return "创建日程失败：日程内容不能为空"
+            if (content.isBlank()) {
+                logger.warn("Empty content")
+                return "false"
             }
 
-            val runAt = LocalDateTime.of(
-                request.year,
-                request.month,
-                request.day,
-                request.hour,
-                request.minute
-            )
+            val runAt =
+                LocalDateTime.parse(runAtStr, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
             val success = scheduleService.createTask(
                 runAt = runAt,
-                content = request.content,
-                userId = request.userId,
+                content = content,
+                userId = userId,
                 createdBy = "user"
             )
 
-            val result = if (success) {
-                val timeStr = DateTimeUtil.formatForDisplay(runAt)
-                "日程创建成功！\n时间：$timeStr\n内容：${request.content}"
-            } else {
-                "创建日程失败，请稍后重试"
-            }
-
-            logger.debug("Tool createUserSchedule result: success={}", success)
-            result
+            logger.debug("Tool createUserSchedule result: success=$success")
+            success.toString()
         } catch (e: Exception) {
-            logger.error(
-                "Tool createUserSchedule failed: userId={} error={}",
-                request.userId, e.message, e
-            )
-            "创建日程失败: ${e.message}"
+            logger.error("Tool createUserSchedule failed: userId=$userId error=${e.message}", e)
+            "false"
         }
     }
-
-    @Serializable
-    data class UserIdRequest(
-        val userId: Long
-    )
-
-    @Serializable
-    data class CreateScheduleRequest(
-        val userId: Long,
-
-        val year: Int,
-
-        val month: Int,
-
-        val day: Int,
-
-        val hour: Int,
-
-        val minute: Int,
-
-        val content: String
-    )
 }

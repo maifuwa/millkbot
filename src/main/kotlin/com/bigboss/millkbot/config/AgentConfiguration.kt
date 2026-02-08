@@ -26,8 +26,8 @@ class AgentConfiguration {
     @Bean
     fun chatClient(
         builder: ChatClient.Builder,
-        systemPrompt: SystemPromptTemplate,
         chatMemory: ChatMemory,
+        systemPrompt: SystemPromptTemplate,
         timeTools: TimeTools,
         searchTools: SearchTools,
         scheduleTools: ScheduleTools

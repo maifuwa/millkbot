@@ -12,7 +12,7 @@ class TimeTools {
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @Tool(description = "获取当前的日期和时间（Asia/Shanghai 时区）。返回易读的时间格式，包括年、月、日、时、分、秒。当你需要知道现在是什么时间时使用此工具。")
+    @Tool(description = "获取当前的日期和时间。")
     fun getCurrentTime(): String {
         logger.debug("Tool getCurrentTime called")
         val now = LocalDateTime.now(ZoneId.of("Asia/Shanghai"))
