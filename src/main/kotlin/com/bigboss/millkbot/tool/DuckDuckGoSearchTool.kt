@@ -7,11 +7,14 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.runBlocking
+import org.slf4j.LoggerFactory
 import org.springframework.ai.tool.annotation.Tool
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 class DuckDuckGoSearchTool {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     private val httpClient = HttpClient(CIO)
     private val objectMapper = ObjectMapper()
@@ -25,16 +28,34 @@ class DuckDuckGoSearchTool {
     fun search(query: String): String {
         return runBlocking {
             try {
+                logger.debug("Tool DuckDuckGoSearchTool.search called: query={}", query)
                 val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
                 val url = "https://api.duckduckgo.com/?q=$encodedQuery&format=json&no_html=1&skip_disambig=1"
+
+                val startMs = System.currentTimeMillis()
+                logger.debug("Tool DuckDuckGoSearchTool.search request: url={}", url)
 
                 val response: HttpResponse = httpClient.get(url)
                 val responseBody = response.bodyAsText()
 
+                val durationMs = System.currentTimeMillis() - startMs
+                logger.debug(
+                    "Tool DuckDuckGoSearchTool.search response: status={} durationMs={} bodyLength={}",
+                    response.status,
+                    durationMs,
+                    responseBody.length
+                )
+
                 val result = objectMapper.readValue(responseBody, DuckDuckGoResponse::class.java)
 
-                formatSearchResult(query, result)
+                val formatted = formatSearchResult(query, result)
+                logger.debug(
+                    "Tool DuckDuckGoSearchTool.search formatted result: length={}",
+                    formatted.length
+                )
+                formatted
             } catch (e: Exception) {
+                logger.debug("Tool DuckDuckGoSearchTool.search failed: query={} error={}", query, e.message)
                 "搜索失败: ${e.message}"
             }
         }
