@@ -1,15 +1,14 @@
 package com.bigboss.millkbot.tool
 
-import com.fasterxml.jackson.annotation.JsonClassDescription
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonPropertyDescription
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.bigboss.millkbot.util.JsonUtil
+import com.bigboss.millkbot.util.decode
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.slf4j.LoggerFactory
 import org.springframework.ai.tool.annotation.Tool
 import org.springframework.stereotype.Service
@@ -17,11 +16,12 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 @Service
-class SearchTools {
+class SearchTools(
+    private val jsonUtil: JsonUtil,
+) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
     private val httpClient = HttpClient(CIO)
-    private val objectMapper = ObjectMapper()
 
     @Tool(description = "使用 DuckDuckGo 搜索引擎搜索互联网信息。当用户询问需要实时信息、最新资讯、网络搜索或你不确定的事实时使用此工具。输入应该是一个搜索查询字符串。返回搜索结果的摘要，包括标题、描述和相关链接。")
     fun duckDuckGoSearch(request: SearchRequest): String {
@@ -45,7 +45,7 @@ class SearchTools {
                     responseBody.length
                 )
 
-                val result = objectMapper.readValue(responseBody, DuckDuckGoResponse::class.java)
+                val result = jsonUtil.decode<DuckDuckGoResponse>(responseBody)
                 val formatted = formatSearchResult(request.query, result)
                 logger.debug("Tool duckDuckGoSearch formatted result: length={}", formatted.length)
                 formatted
@@ -100,50 +100,72 @@ class SearchTools {
         return sb.toString().trim()
     }
 
-    @JsonClassDescription("搜索请求")
+    @Serializable
     data class SearchRequest(
-        @JsonProperty(required = true)
-        @JsonPropertyDescription("搜索查询字符串")
         val query: String
     )
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     data class DuckDuckGoResponse(
+        @SerialName("Abstract")
         val abstract: String? = null,
+        @SerialName("AbstractText")
         val abstractText: String? = null,
+        @SerialName("AbstractSource")
         val abstractSource: String? = null,
+        @SerialName("AbstractURL")
         val abstractURL: String? = null,
+        @SerialName("Answer")
         val answer: String? = null,
+        @SerialName("AnswerType")
         val answerType: String? = null,
+        @SerialName("Definition")
         val definition: String? = null,
+        @SerialName("DefinitionSource")
         val definitionSource: String? = null,
+        @SerialName("DefinitionURL")
         val definitionURL: String? = null,
+        @SerialName("Heading")
         val heading: String? = null,
+        @SerialName("Image")
         val image: String? = null,
+        @SerialName("RelatedTopics")
         val relatedTopics: List<RelatedTopic>? = null,
+        @SerialName("Results")
         val results: List<Result>? = null,
+        @SerialName("Type")
         val type: String? = null
     )
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     data class RelatedTopic(
+        @SerialName("Text")
         val text: String? = null,
+        @SerialName("FirstURL")
         val firstURL: String? = null,
-        val icon: Icon? = null
+        @SerialName("Icon")
+        val icon: Icon? = null,
+        @SerialName("Topics")
+        val topics: List<RelatedTopic>? = null
     )
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     data class Icon(
+        @SerialName("URL")
         val url: String? = null,
+        @SerialName("Height")
         val height: Int? = null,
+        @SerialName("Width")
         val width: Int? = null
     )
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     data class Result(
+        @SerialName("Text")
         val text: String? = null,
+        @SerialName("FirstURL")
         val firstURL: String? = null,
+        @SerialName("Icon")
         val icon: Icon? = null
     )
 }
-

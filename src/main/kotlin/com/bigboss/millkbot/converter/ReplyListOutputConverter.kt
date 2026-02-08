@@ -1,14 +1,14 @@
 package com.bigboss.millkbot.converter
 
 import com.bigboss.millkbot.util.FaceEmojiCatalog
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.bigboss.millkbot.util.JsonUtil
+import com.bigboss.millkbot.util.decode
 import org.springframework.ai.converter.ListOutputConverter
 import org.springframework.stereotype.Component
 
 @Component
 class ReplyListOutputConverter(
-    private val objectMapper: ObjectMapper,
+    private val jsonUtil: JsonUtil,
 ) : ListOutputConverter() {
 
     override fun getFormat(): String {
@@ -41,7 +41,7 @@ class ReplyListOutputConverter(
         }
 
         return runCatching {
-            objectMapper.readValue(sourceText, object : TypeReference<List<String>>() {})
+            jsonUtil.decode<List<String>>(sourceText)
         }.getOrElse {
             listOf(sourceText)
         }

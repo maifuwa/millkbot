@@ -2,9 +2,7 @@ package com.bigboss.millkbot.tool
 
 import com.bigboss.millkbot.schedule.ScheduleService
 import com.bigboss.millkbot.util.CronUtil
-import com.fasterxml.jackson.annotation.JsonClassDescription
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonPropertyDescription
+import kotlinx.serialization.Serializable
 import org.slf4j.LoggerFactory
 import org.springframework.ai.tool.annotation.Tool
 import org.springframework.stereotype.Service
@@ -101,41 +99,25 @@ class ScheduleTools(private val scheduleService: ScheduleService) {
         }
     }
 
-    @JsonClassDescription("用户ID请求")
+    @Serializable
     data class UserIdRequest(
-        @JsonProperty(required = true)
-        @JsonPropertyDescription("用户ID")
         val userId: Long
     )
 
-    @JsonClassDescription("创建日程请求")
+    @Serializable
     data class CreateScheduleRequest(
-        @JsonProperty(required = true)
-        @JsonPropertyDescription("用户ID")
         val userId: Long,
 
-        @JsonProperty(required = true)
-        @JsonPropertyDescription("年份（如 2026）")
         val year: Int,
 
-        @JsonProperty(required = true)
-        @JsonPropertyDescription("月份（1-12）")
         val month: Int,
 
-        @JsonProperty(required = true)
-        @JsonPropertyDescription("日期（1-31）")
         val day: Int,
 
-        @JsonProperty(required = true)
-        @JsonPropertyDescription("小时（0-23）")
         val hour: Int,
 
-        @JsonProperty(required = true)
-        @JsonPropertyDescription("分钟（0-59）")
         val minute: Int,
 
-        @JsonProperty(required = true)
-        @JsonPropertyDescription("日程内容描述")
         val content: String
     )
 }
