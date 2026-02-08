@@ -80,11 +80,9 @@ class ScheduleService(
     @Transactional
     fun deleteExpiredTasks(): Int {
         val allTasks = sqlClient.createQuery(ScheduledTask::class) {
+            where(table.enabled eq true)
             select(table.fetchBy {
                 allScalarFields()
-                user {
-                    allScalarFields()
-                }
             })
         }.execute()
 

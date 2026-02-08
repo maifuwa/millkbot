@@ -2,7 +2,6 @@ package com.bigboss.millkbot.schedule
 
 import com.bigboss.millkbot.service.UserService
 import com.bigboss.millkbot.util.CronUtil
-import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -17,8 +16,7 @@ class QuartzActuator(
 ) {
     private val logger = LoggerFactory.getLogger(QuartzActuator::class.java)
 
-    @PostConstruct
-    fun initializeTasks() {
+    init {
         logger.info("开始初始化定时任务...")
 
         try {
