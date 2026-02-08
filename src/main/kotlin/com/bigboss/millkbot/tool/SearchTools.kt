@@ -1,6 +1,9 @@
 package com.bigboss.millkbot.tool
 
+import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -9,61 +12,51 @@ import io.ktor.client.statement.*
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.ai.tool.annotation.Tool
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-@Component
-class DuckDuckGoSearchTool {
+@Service
+class SearchTools {
 
     private val logger = LoggerFactory.getLogger(javaClass)
-
     private val httpClient = HttpClient(CIO)
     private val objectMapper = ObjectMapper()
 
-    @Tool(
-        description = """使用 DuckDuckGo 搜索引擎搜索互联网信息。
-        当用户询问需要实时信息、最新资讯、网络搜索或你不确定的事实时使用此工具。
-        输入应该是一个搜索查询字符串。
-        返回搜索结果的摘要，包括标题、描述和相关链接。"""
-    )
-    fun search(query: String): String {
+    @Tool(description = "使用 DuckDuckGo 搜索引擎搜索互联网信息。当用户询问需要实时信息、最新资讯、网络搜索或你不确定的事实时使用此工具。输入应该是一个搜索查询字符串。返回搜索结果的摘要，包括标题、描述和相关链接。")
+    fun duckDuckGoSearch(request: SearchRequest): String {
         return runBlocking {
             try {
-                logger.debug("Tool DuckDuckGoSearchTool.search called: query={}", query)
-                val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
+                logger.debug("Tool duckDuckGoSearch called: query={}", request.query)
+                val encodedQuery = URLEncoder.encode(request.query, StandardCharsets.UTF_8.toString())
                 val url = "https://api.duckduckgo.com/?q=$encodedQuery&format=json&no_html=1&skip_disambig=1"
 
                 val startMs = System.currentTimeMillis()
-                logger.debug("Tool DuckDuckGoSearchTool.search request: url={}", url)
+                logger.debug("Tool duckDuckGoSearch request: url={}", url)
 
                 val response: HttpResponse = httpClient.get(url)
                 val responseBody = response.bodyAsText()
 
                 val durationMs = System.currentTimeMillis() - startMs
                 logger.debug(
-                    "Tool DuckDuckGoSearchTool.search response: status={} durationMs={} bodyLength={}",
+                    "Tool duckDuckGoSearch response: status={} durationMs={} bodyLength={}",
                     response.status,
                     durationMs,
                     responseBody.length
                 )
 
                 val result = objectMapper.readValue(responseBody, DuckDuckGoResponse::class.java)
-
-                val formatted = formatSearchResult(query, result)
-                logger.debug(
-                    "Tool DuckDuckGoSearchTool.search formatted result: length={}",
-                    formatted.length
-                )
+                val formatted = formatSearchResult(request.query, result)
+                logger.debug("Tool duckDuckGoSearch formatted result: length={}", formatted.length)
                 formatted
             } catch (e: Exception) {
-                logger.debug("Tool DuckDuckGoSearchTool.search failed: query={} error={}", query, e.message)
+                logger.debug("Tool duckDuckGoSearch failed: query={} error={}", request.query, e.message)
                 "搜索失败: ${e.message}"
             }
         }
     }
 
-    private fun formatSearchResult(query: String, result: DuckDuckGoResponse): String {
+    fun formatSearchResult(query: String, result: DuckDuckGoResponse): String {
         val sb = StringBuilder()
         sb.append("搜索查询: $query\n\n")
 
@@ -107,6 +100,13 @@ class DuckDuckGoSearchTool {
         return sb.toString().trim()
     }
 
+    @JsonClassDescription("搜索请求")
+    data class SearchRequest(
+        @JsonProperty(required = true)
+        @JsonPropertyDescription("搜索查询字符串")
+        val query: String
+    )
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class DuckDuckGoResponse(
         val abstract: String? = null,
@@ -146,3 +146,4 @@ class DuckDuckGoSearchTool {
         val icon: Icon? = null
     )
 }
+
