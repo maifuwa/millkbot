@@ -1,7 +1,7 @@
 package com.bigboss.millkbot.schedule
 
 import com.bigboss.millkbot.model.*
-import com.bigboss.millkbot.util.CronUtil
+import com.bigboss.millkbot.util.DateTimeUtil
 import org.babyfish.jimmer.sql.ast.mutation.SaveMode
 import org.babyfish.jimmer.sql.kt.KSqlClient
 import org.babyfish.jimmer.sql.kt.ast.expression.eq
@@ -11,6 +11,8 @@ import org.quartz.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
+import java.util.Date
 
 @Service
 class ScheduleService(
@@ -21,9 +23,9 @@ class ScheduleService(
     private val logger = LoggerFactory.getLogger(ScheduleService::class.java)
 
     @Transactional
-    fun createTask(cronExpr: String, content: String, userId: Long, createdBy: String): Boolean {
+    fun createTask(runAt: LocalDateTime, content: String, userId: Long, createdBy: String): Boolean {
         val task = sqlClient.save(ScheduledTask {
-            this.cronExpr = cronExpr
+            this.runAt = runAt
             this.content = content
             this.createdBy = createdBy
             this.userId = userId
@@ -36,10 +38,10 @@ class ScheduleService(
             if (scheduler.checkExists(jobKey) || scheduler.checkExists(triggerKey)) {
                 true
             } else {
-                scheduleJob(task)
+                startTask(task)
             }
         } catch (e: Exception) {
-            logger.error("Failed to schedule task id=${task.id}, cron=${task.cronExpr}", e)
+            logger.error("Failed to schedule task id=${task.id}, runAt=${task.runAt}", e)
             false
         }
     }
@@ -87,14 +89,14 @@ class ScheduleService(
         }.execute()
 
         var deletedCount = 0
-        val now = java.time.LocalDateTime.now()
+        val now = DateTimeUtil.now()
 
         allTasks.forEach { task ->
             try {
-                if (CronUtil.isTaskExpired(task.cronExpr, now)) {
+                if (DateTimeUtil.isTaskExpired(task.runAt, now)) {
                     if (deleteTask(task)) {
                         deletedCount++
-                        logger.info("删除过期任务: id=${task.id}, cron=${task.cronExpr}")
+                        logger.info("删除过期任务: id=${task.id}, runAt=${task.runAt}")
                     }
                 }
             } catch (e: Exception) {
@@ -117,16 +119,16 @@ class ScheduleService(
                 scheduler.unscheduleJob(triggerKey)
             }
 
-            scheduleJob(task)
-            logger.info("Successfully loaded task id=${task.id}, cron=${task.cronExpr}")
+            startTask(task)
+            logger.info("Successfully loaded task id=${task.id}, runAt=${task.runAt}")
             true
         } catch (e: Exception) {
-            logger.error("Failed to load task id=${task.id}, cron=${task.cronExpr}", e)
+            logger.error("Failed to load task id=${task.id}, runAt=${task.runAt}", e)
             false
         }
     }
 
-    private fun scheduleJob(task: ScheduledTask): Boolean {
+    private fun startTask(task: ScheduledTask): Boolean {
         if (!scheduler.isStarted) scheduler.start()
 
         val jobDetail = JobBuilder.newJob(AgentTask::class.java)
@@ -136,9 +138,13 @@ class ScheduleService(
             .usingJobData("createdBy", task.createdBy)
             .build()
 
+        val startTime = Date.from(
+            task.runAt.atZone(DateTimeUtil.getZoneId()).toInstant()
+        )
+
         val trigger = TriggerBuilder.newTrigger()
             .withIdentity(task.id.toString(), task.createdBy)
-            .withSchedule(CronScheduleBuilder.cronSchedule(task.cronExpr))
+            .startAt(startTime)
             .build()
 
         scheduler.scheduleJob(jobDetail, trigger)

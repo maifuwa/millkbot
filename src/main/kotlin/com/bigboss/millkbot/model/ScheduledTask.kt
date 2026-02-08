@@ -11,7 +11,7 @@ interface ScheduledTask {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long
 
-    val cronExpr: String
+    val runAt: LocalDateTime
 
     val content: String
 

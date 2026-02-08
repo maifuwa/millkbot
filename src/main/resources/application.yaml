@@ -11,7 +11,7 @@ spring:
 logging:
   level:
     com.bigboss.millkbot: debug
-    org.springframework.ai.chat.client.advisor: debug
+    org.springframework.ai.chat.client.advisor: info
 
 prompt:
   path: "file:./system_prompt"

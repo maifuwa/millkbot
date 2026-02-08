@@ -3,10 +3,8 @@ package com.bigboss.millkbot.util
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.springframework.stereotype.Component
 
-@Component
-class JsonUtil {
+object JsonUtil {
 
     @OptIn(ExperimentalSerializationApi::class)
     val json: Json = Json {

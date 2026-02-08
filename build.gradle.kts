@@ -38,14 +38,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-aop")
     implementation("org.springframework.ai:spring-ai-starter-model-openai")
+    implementation("org.springframework.boot:spring-boot-starter-quartz")
 
     // database
     implementation("org.postgresql:postgresql")
     ksp("org.babyfish.jimmer:jimmer-ksp:0.10.6")
     implementation("org.babyfish.jimmer:jimmer-spring-boot-starter:0.10.6")
-
-    // quartz
-    implementation("org.springframework.boot:spring-boot-starter-quartz")
 
     // milky
     implementation("org.ntqqrev:milky-kt-sdk:1.1.0")

@@ -1,11 +1,12 @@
 package com.bigboss.millkbot.schedule
 
 import com.bigboss.millkbot.service.UserService
-import com.bigboss.millkbot.util.CronUtil
+import com.bigboss.millkbot.util.DateTimeUtil
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.random.Random
 
@@ -97,14 +98,14 @@ class QuartzActuator(
 
     private fun createOnceTask(userId: Long, hour: Int, minute: Int, date: String, content: String) {
         val dateParts = date.split("-")
-        val year = dateParts[0]
-        val month = dateParts[1]
-        val day = dateParts[2]
+        val year = dateParts[0].toInt()
+        val month = dateParts[1].toInt()
+        val day = dateParts[2].toInt()
 
-        val cronExpr = CronUtil.buildOnceCronExpression(year, month, day, hour, minute)
+        val runAt = LocalDateTime.of(year, month, day, hour, minute)
 
         scheduleService.createTask(
-            cronExpr = cronExpr,
+            runAt = runAt,
             content = content,
             userId = userId,
             createdBy = "system"

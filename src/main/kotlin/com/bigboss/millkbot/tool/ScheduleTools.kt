@@ -1,11 +1,12 @@
 package com.bigboss.millkbot.tool
 
 import com.bigboss.millkbot.schedule.ScheduleService
-import com.bigboss.millkbot.util.CronUtil
+import com.bigboss.millkbot.util.DateTimeUtil
 import kotlinx.serialization.Serializable
 import org.slf4j.LoggerFactory
 import org.springframework.ai.tool.annotation.Tool
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class ScheduleTools(private val scheduleService: ScheduleService) {
@@ -25,7 +26,7 @@ class ScheduleTools(private val scheduleService: ScheduleService) {
             }
 
             val taskList = tasks.mapIndexed { index, task ->
-                "${index + 1}. ${CronUtil.parseCronExpression(task.cronExpr)} - ${task.content}"
+                "${index + 1}. ${DateTimeUtil.formatForDisplay(task.runAt)} - ${task.content}"
             }.joinToString("\n")
 
             val result = """
@@ -66,23 +67,23 @@ class ScheduleTools(private val scheduleService: ScheduleService) {
                 return "创建日程失败：日程内容不能为空"
             }
 
-            val cronExpr = CronUtil.buildOnceCronExpression(
-                year = request.year.toString(),
-                month = request.month.toString(),
-                day = request.day.toString(),
-                hour = request.hour,
-                minute = request.minute
+            val runAt = LocalDateTime.of(
+                request.year,
+                request.month,
+                request.day,
+                request.hour,
+                request.minute
             )
 
             val success = scheduleService.createTask(
-                cronExpr = cronExpr,
+                runAt = runAt,
                 content = request.content,
                 userId = request.userId,
                 createdBy = "user"
             )
 
             val result = if (success) {
-                val timeStr = CronUtil.parseCronExpression(cronExpr)
+                val timeStr = DateTimeUtil.formatForDisplay(runAt)
                 "日程创建成功！\n时间：$timeStr\n内容：${request.content}"
             } else {
                 "创建日程失败，请稍后重试"

@@ -7,9 +7,7 @@ import org.springframework.ai.converter.ListOutputConverter
 import org.springframework.stereotype.Component
 
 @Component
-class ReplyListOutputConverter(
-    private val jsonUtil: JsonUtil,
-) : ListOutputConverter() {
+class ReplyListOutputConverter : ListOutputConverter() {
 
     override fun getFormat(): String {
         return """
@@ -41,7 +39,7 @@ class ReplyListOutputConverter(
         }
 
         return runCatching {
-            jsonUtil.decode<List<String>>(sourceText)
+            JsonUtil.decode<List<String>>(sourceText)
         }.getOrElse {
             listOf(sourceText)
         }
