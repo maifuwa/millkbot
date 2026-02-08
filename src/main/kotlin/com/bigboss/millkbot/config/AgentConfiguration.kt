@@ -18,7 +18,7 @@ import org.springframework.core.io.Resource
 class AgentConfiguration {
 
     @Bean
-    fun systemPromptTemplate(@Value("\${prompt.path}") promptResource: Resource): SystemPromptTemplate {
+    fun systemPromptTemplate(@Value($$"${prompt.path}") promptResource: Resource): SystemPromptTemplate {
         val templateText = promptResource.inputStream.bufferedReader().use { it.readText() }
         return SystemPromptTemplate(templateText)
     }

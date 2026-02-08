@@ -3,7 +3,7 @@ package com.bigboss.millkbot.plug.impl
 import com.bigboss.millkbot.plug.MessagePlugin
 import com.bigboss.millkbot.plug.ProcessedMessage
 import com.bigboss.millkbot.service.AgentService
-import com.bigboss.millkbot.util.MessageTextConverter
+import com.bigboss.millkbot.util.MilkyMessageSender
 import org.ntqqrev.milky.IncomingMessage
 import org.ntqqrev.milky.MilkyClient
 import org.ntqqrev.milky.sendPrivateMessage
@@ -33,10 +33,7 @@ class FriendChatPlugin(
         try {
             val replies = agentService.chat(user, content)
             if (replies.isNotEmpty()) {
-                replies.forEach { reply ->
-                    val segments = MessageTextConverter.parseToOutgoingSegments(reply)
-                    milkyClient.sendPrivateMessage(senderId, segments)
-                }
+                MilkyMessageSender.sendTextsAsSegments(milkyClient, senderId, replies)
             }
         } catch (e: Exception) {
             logger.error("Agent service error", e)

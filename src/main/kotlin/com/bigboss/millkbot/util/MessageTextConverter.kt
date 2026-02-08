@@ -6,27 +6,33 @@ import org.ntqqrev.milky.*
 object MessageTextConverter {
 
     fun buildChatMessage(user: User): String {
-        return """
-            |userInfo:
-            |  id: ${user.id}
-            |  name: ${user.name}
-            |  relation: ${user.relation}
-            |  ${if (user.customPrompt!!.isBlank()) "" else "custom prompt: " + user.customPrompt}
-        """.trimMargin()
+        return buildUserInfoBlock(user)
     }
 
     fun buildDealChatMessage(user: User, task: String): String {
-        return """
-            |userInfo:
-            |  id: ${user.id}
-            |  name: ${user.name}
-            |  relation: ${user.relation}
-            |  ${if (user.customPrompt!!.isBlank()) "" else "custom prompt: " + user.customPrompt}
-            |
-            |[由${user.name}日程触发](agent task)
-            |taskInfo:
-            |  content: $task
-        """.trimMargin()
+        return buildString {
+            appendLine(buildUserInfoBlock(user))
+            appendLine()
+            appendLine("[由${user.name}日程触发](agent task)")
+            appendLine("taskInfo:")
+            appendLine("  content: $task")
+        }.trimEnd()
+    }
+
+    private fun buildUserInfoBlock(user: User): String {
+        val lines = mutableListOf(
+            "userInfo:",
+            "  id: ${user.id}",
+            "  name: ${user.name}",
+            "  relation: ${user.relation}",
+        )
+
+        user.customPrompt
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?.let { lines.add("  custom prompt: $it") }
+
+        return lines.joinToString("\n")
     }
 
     private val faceMap: Map<String, String> = FaceEmojiCatalog.faceIdToName
@@ -72,7 +78,7 @@ object MessageTextConverter {
     private fun convertSegment(segment: IncomingSegment): String {
         return when (segment) {
             is IncomingSegment.Text -> segment.text
-            is IncomingSegment.Face -> faceMap[segment.faceId] + "[表情]"
+            is IncomingSegment.Face -> faceMap[segment.faceId]?.let { "$it[表情]" } ?: ""
             is IncomingSegment.MarketFace -> segment.summary
             else -> ""
         }

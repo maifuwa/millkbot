@@ -18,13 +18,11 @@ class MessageSubscriber(
     private val logger = LoggerFactory.getLogger(javaClass)
 
     private val friendPlugins by lazy {
-        allPlugins.filterIsInstance<MessagePlugin<IncomingMessage.Friend>>()
-            .sortedBy { it.order }
+        pluginsOfType<IncomingMessage.Friend>()
     }
 
     private val groupPlugins by lazy {
-        allPlugins.filterIsInstance<MessagePlugin<IncomingMessage.Group>>()
-            .sortedBy { it.order }
+        pluginsOfType<IncomingMessage.Group>()
     }
 
     init {
@@ -50,8 +48,14 @@ class MessageSubscriber(
                     return
                 }
             } catch (e: Exception) {
-                logger.error("Error in plugin ${plugin.javaClass.simpleName}: ${e.message}")
+                logger.error("Error in plugin ${plugin.javaClass.simpleName}", e)
             }
         }
+    }
+
+    private inline fun <reified T : IncomingMessage> pluginsOfType(): List<MessagePlugin<T>> {
+        return allPlugins
+            .filterIsInstance<MessagePlugin<T>>()
+            .sortedBy { it.order }
     }
 }

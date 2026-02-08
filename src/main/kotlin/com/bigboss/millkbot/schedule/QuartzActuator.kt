@@ -6,8 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import kotlin.math.max
 import kotlin.random.Random
 
 @Component
@@ -56,7 +55,7 @@ class QuartzActuator(
             return
         }
 
-        val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val today = DateTimeUtil.today()
 
         masterIds.forEach { userId ->
             try {
@@ -71,39 +70,26 @@ class QuartzActuator(
         logger.info("每日定时任务生成完成，共处理 ${masterIds.size} 个 Master 用户")
     }
 
-    private fun generateDailyTasksForUser(userId: Long, date: String) {
-        val morningHour = Random.nextInt(7, 10)
-        val morningMinute = Random.nextInt(0, 60)
-        createOnceTask(userId, morningHour, morningMinute, date, "早上问候")
+    private fun generateDailyTasksForUser(userId: Long, date: LocalDate) {
+        val greetings = listOf(
+            GreetingSpec("早上问候", hourRange = 7..9),
+            GreetingSpec("中文问候", hourRange = 12..13),
+            GreetingSpec("晚上问候", hourRange = 18..20),
+        )
 
-        val noonHour = Random.nextInt(12, 14)
-        val noonMinute = Random.nextInt(0, 60)
-        createOnceTask(userId, noonHour, noonMinute, date, "中文问候")
-
-        val eveningHour = Random.nextInt(18, 21)
-        val eveningMinute = Random.nextInt(0, 60)
-        createOnceTask(userId, eveningHour, eveningMinute, date, "晚上问候")
-
-        val waterReminders = mutableSetOf<Pair<Int, Int>>()
-        while (waterReminders.size < 5) {
-            val hour = Random.nextInt(9, 23)
-            val minute = Random.nextInt(0, 60)
-            waterReminders.add(Pair(hour, minute))
+        greetings.forEach { spec ->
+            val time = randomTime(spec.hourRange)
+            createOnceTask(userId, date, time.first, time.second, spec.content)
         }
 
-        waterReminders.forEach { (hour, minute) ->
-            createOnceTask(userId, hour, minute, date, "提醒用户喝水")
-        }
+        pickUniqueRandomTimes(count = 5, hourRange = 9..22)
+            .forEach { (hour, minute) ->
+                createOnceTask(userId, date, hour, minute, "提醒用户喝水")
+            }
     }
 
-    private fun createOnceTask(userId: Long, hour: Int, minute: Int, date: String, content: String) {
-        val dateParts = date.split("-")
-        val year = dateParts[0].toInt()
-        val month = dateParts[1].toInt()
-        val day = dateParts[2].toInt()
-
-        val runAt = LocalDateTime.of(year, month, day, hour, minute)
-
+    private fun createOnceTask(userId: Long, date: LocalDate, hour: Int, minute: Int, content: String) {
+        val runAt = date.atTime(hour, minute)
         scheduleService.createTask(
             runAt = runAt,
             content = content,
@@ -111,4 +97,26 @@ class QuartzActuator(
             createdBy = "system"
         )
     }
+
+    private fun randomTime(hourRange: IntRange): Pair<Int, Int> {
+        val start = hourRange.first
+        val endExclusive = max(hourRange.last + 1, start + 1)
+        val hour = Random.nextInt(start, endExclusive)
+        val minute = Random.nextInt(0, 60)
+        return hour to minute
+    }
+
+    private fun pickUniqueRandomTimes(count: Int, hourRange: IntRange): Set<Pair<Int, Int>> {
+        val targetCount = max(count, 0)
+        val times = mutableSetOf<Pair<Int, Int>>()
+        while (times.size < targetCount) {
+            times.add(randomTime(hourRange))
+        }
+        return times
+    }
+
+    private data class GreetingSpec(
+        val content: String,
+        val hourRange: IntRange,
+    )
 }

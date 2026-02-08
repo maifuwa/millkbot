@@ -5,6 +5,7 @@ import com.bigboss.millkbot.util.DateTimeUtil
 import org.babyfish.jimmer.sql.ast.mutation.SaveMode
 import org.babyfish.jimmer.sql.kt.KSqlClient
 import org.babyfish.jimmer.sql.kt.ast.expression.eq
+import org.babyfish.jimmer.sql.kt.ast.expression.lt
 import org.babyfish.jimmer.sql.kt.createUpdate
 import org.babyfish.jimmer.sql.kt.findById
 import org.quartz.*
@@ -12,7 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.util.Date
+import java.util.*
 
 @Service
 class ScheduleService(
@@ -32,14 +33,11 @@ class ScheduleService(
         }, SaveMode.INSERT_ONLY).modifiedEntity
 
         return try {
-            val jobKey = JobKey.jobKey(task.id.toString(), task.createdBy)
-            val triggerKey = TriggerKey.triggerKey(task.id.toString(), task.createdBy)
+            val jobKey = jobKey(task)
+            val triggerKey = triggerKey(task)
 
-            if (scheduler.checkExists(jobKey) || scheduler.checkExists(triggerKey)) {
-                true
-            } else {
-                startTask(task)
-            }
+            if (scheduler.checkExists(jobKey) || scheduler.checkExists(triggerKey)) return true
+            startTask(task, userId)
         } catch (e: Exception) {
             logger.error("Failed to schedule task id=${task.id}, runAt=${task.runAt}", e)
             false
@@ -50,13 +48,11 @@ class ScheduleService(
     fun deleteTask(task: ScheduledTask): Boolean = try {
         if (!disableTask(task.id)) return false
 
-        val jobKey = JobKey.jobKey(task.id.toString(), task.createdBy)
-        val triggerKey = TriggerKey.triggerKey(task.id.toString(), task.createdBy)
+        val jobKey = jobKey(task)
+        val triggerKey = triggerKey(task)
 
-        when {
-            !scheduler.checkExists(jobKey) && !scheduler.checkExists(triggerKey) -> true
-            else -> scheduler.unscheduleJob(triggerKey) && scheduler.deleteJob(jobKey)
-        }
+        if (!scheduler.checkExists(jobKey) && !scheduler.checkExists(triggerKey)) return true
+        scheduler.unscheduleJob(triggerKey) && scheduler.deleteJob(jobKey)
     } catch (e: Exception) {
         logger.error("Failed to delete task id=${task.id}", e)
         logger.debug("Failed to delete task details: taskId={}, group={}", task.id, task.createdBy)
@@ -81,36 +77,39 @@ class ScheduleService(
 
     @Transactional
     fun deleteExpiredTasks(): Int {
-        val allTasks = sqlClient.createQuery(ScheduledTask::class) {
-            where(table.enabled eq true)
-            select(table.fetchBy {
-                allScalarFields()
-            })
-        }.execute()
+        val now = DateTimeUtil.now()
+        val expiredTasks = findExpiredEnabledTasks(now)
 
         var deletedCount = 0
-        val now = DateTimeUtil.now()
-
-        allTasks.forEach { task ->
+        expiredTasks.forEach { task ->
             try {
-                if (DateTimeUtil.isTaskExpired(task.runAt, now)) {
-                    if (deleteTask(task)) {
-                        deletedCount++
-                        logger.info("删除过期任务: id=${task.id}, runAt=${task.runAt}")
-                    }
+                if (deleteTask(task)) {
+                    deletedCount++
+                    logger.info("删除过期任务: id=${task.id}, runAt=${task.runAt}")
                 }
             } catch (e: Exception) {
-                logger.error("检查任务是否过期时出错: id=${task.id}", e)
+                logger.error("删除过期任务时出错: id=${task.id}", e)
             }
         }
-
         return deletedCount
+    }
+
+    private fun findExpiredEnabledTasks(now: LocalDateTime): List<ScheduledTask> {
+        return sqlClient.createQuery(ScheduledTask::class) {
+            where(table.enabled eq true)
+            where(table.runAt lt now)
+            select(
+                table.fetchBy {
+                    allScalarFields()
+                }
+            )
+        }.execute()
     }
 
     fun loadTask(task: ScheduledTask): Boolean {
         return try {
-            val jobKey = JobKey.jobKey(task.id.toString(), task.createdBy)
-            val triggerKey = TriggerKey.triggerKey(task.id.toString(), task.createdBy)
+            val jobKey = jobKey(task)
+            val triggerKey = triggerKey(task)
 
             if (scheduler.checkExists(jobKey)) {
                 scheduler.deleteJob(jobKey)
@@ -119,7 +118,7 @@ class ScheduleService(
                 scheduler.unscheduleJob(triggerKey)
             }
 
-            startTask(task)
+            startTask(task, task.user.id)
             logger.info("Successfully loaded task id=${task.id}, runAt=${task.runAt}")
             true
         } catch (e: Exception) {
@@ -128,12 +127,12 @@ class ScheduleService(
         }
     }
 
-    private fun startTask(task: ScheduledTask): Boolean {
+    private fun startTask(task: ScheduledTask, userId: Long): Boolean {
         if (!scheduler.isStarted) scheduler.start()
 
         val jobDetail = JobBuilder.newJob(AgentTask::class.java)
             .withIdentity(task.id.toString(), task.createdBy)
-            .usingJobData("userId", task.user.id)
+            .usingJobData("userId", userId)
             .usingJobData("taskId", task.id)
             .usingJobData("createdBy", task.createdBy)
             .build()
@@ -156,6 +155,14 @@ class ScheduleService(
             set(table.enabled, false)
             where(table.id eq taskId)
         }.execute() > 0
+    }
+
+    private fun jobKey(task: ScheduledTask): JobKey {
+        return JobKey.jobKey(task.id.toString(), task.createdBy)
+    }
+
+    private fun triggerKey(task: ScheduledTask): TriggerKey {
+        return TriggerKey.triggerKey(task.id.toString(), task.createdBy)
     }
 
     fun findEnableTaskByUser(id: Long): List<ScheduledTask> {

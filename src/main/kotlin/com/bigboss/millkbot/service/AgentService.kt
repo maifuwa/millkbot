@@ -32,9 +32,7 @@ class AgentService(
                 ?: emptyList()
         }
 
-        return replies
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
+        return normalizeReplies(replies)
     }
 
     suspend fun deal(user: User, taskContent: String): List<String> {
@@ -48,8 +46,14 @@ class AgentService(
                 ?: emptyList()
         }
 
+        return normalizeReplies(replies)
+    }
+
+    private fun normalizeReplies(replies: List<String>): List<String> {
         return replies
+            .asSequence()
             .map { it.trim() }
             .filter { it.isNotBlank() }
+            .toList()
     }
 }

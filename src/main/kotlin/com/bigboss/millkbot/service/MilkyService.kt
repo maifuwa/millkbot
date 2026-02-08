@@ -39,7 +39,7 @@ class MilkyService(
                     }
                 }
             } catch (e: Exception) {
-                logger.error("Error in Milky listening: ${e.message}")
+                logger.error("Error in Milky listening", e)
             }
         }
     }

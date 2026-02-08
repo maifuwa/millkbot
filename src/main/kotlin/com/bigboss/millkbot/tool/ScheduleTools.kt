@@ -2,12 +2,12 @@ package com.bigboss.millkbot.tool
 
 import com.bigboss.millkbot.model.ScheduledTask
 import com.bigboss.millkbot.schedule.ScheduleService
+import com.bigboss.millkbot.util.DateTimeUtil
 import com.bigboss.millkbot.util.JsonUtil
 import com.bigboss.millkbot.util.encode
 import org.slf4j.LoggerFactory
 import org.springframework.ai.tool.annotation.Tool
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 @Service
 class ScheduleTools(private val scheduleService: ScheduleService) {
@@ -64,8 +64,7 @@ class ScheduleTools(private val scheduleService: ScheduleService) {
                 return "false"
             }
 
-            val runAt =
-                LocalDateTime.parse(runAtStr, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+            val runAt = DateTimeUtil.parseStandardOrNull(runAtStr) ?: return "false"
 
             val success = scheduleService.createTask(
                 runAt = runAt,

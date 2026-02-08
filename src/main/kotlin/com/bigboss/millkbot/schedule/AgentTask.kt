@@ -4,11 +4,10 @@ import com.bigboss.millkbot.model.ScheduledTask
 import com.bigboss.millkbot.model.User
 import com.bigboss.millkbot.service.AgentService
 import com.bigboss.millkbot.service.UserService
-import com.bigboss.millkbot.util.MessageTextConverter
+import com.bigboss.millkbot.util.MilkyMessageSender
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.ntqqrev.milky.MilkyClient
-import org.ntqqrev.milky.sendPrivateMessage
 import org.quartz.JobExecutionContext
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.quartz.QuartzJobBean
@@ -43,13 +42,14 @@ class AgentTask(
         applicationScope.launch {
             try {
                 val replies = agentService.deal(user, task.content)
-                replies.forEach { reply ->
-                    val segments = MessageTextConverter.parseToOutgoingSegments(reply)
-                    milkyClient.sendPrivateMessage(user.id, segments)
-                }
+                MilkyMessageSender.sendTextsAsSegments(milkyClient, user.id, replies)
             } catch (e: Exception) {
                 logger.error("Failed to process and send scheduled task, taskId={}", task.id, e)
-                logger.debug("Failed to process and send scheduled task details: userId={}, taskId={}", user.id, task.id)
+                logger.debug(
+                    "Failed to process and send scheduled task details: userId={}, taskId={}",
+                    user.id,
+                    task.id
+                )
             }
         }
     }

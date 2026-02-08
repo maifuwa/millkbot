@@ -42,9 +42,7 @@ class ChatMemoryService(
 
         messages.forEach { message ->
             val messageType = message.messageType
-            if (messageType != MessageType.USER && messageType != MessageType.ASSISTANT && messageType != MessageType.SYSTEM) {
-                return@forEach
-            }
+            if (messageType !in SUPPORTED_MESSAGE_TYPES) return@forEach
 
             sqlClient.save(AgentChatMemory {
                 this.conversationId = conversationId
@@ -67,5 +65,9 @@ class ChatMemoryService(
             MessageType.SYSTEM.value -> SystemMessage(messageContent)
             else -> AssistantMessage(messageContent)
         }
+    }
+
+    private companion object {
+        val SUPPORTED_MESSAGE_TYPES = setOf(MessageType.USER, MessageType.ASSISTANT, MessageType.SYSTEM)
     }
 }
