@@ -2,10 +2,12 @@ package com.bigboss.millkbot.tool
 
 import org.slf4j.LoggerFactory
 import org.springframework.ai.tool.annotation.Tool
+import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+@Component
 class GetCurrentTimeTool {
 
     private val logger = LoggerFactory.getLogger(javaClass)

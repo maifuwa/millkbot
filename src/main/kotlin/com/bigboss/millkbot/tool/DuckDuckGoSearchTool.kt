@@ -9,9 +9,11 @@ import io.ktor.client.statement.*
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.ai.tool.annotation.Tool
+import org.springframework.stereotype.Component
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
+@Component
 class DuckDuckGoSearchTool {
 
     private val logger = LoggerFactory.getLogger(javaClass)

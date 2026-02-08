@@ -1,6 +1,7 @@
 package com.bigboss.millkbot.schedule
 
 import com.bigboss.millkbot.service.UserService
+import com.bigboss.millkbot.util.CronUtil
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -102,7 +103,7 @@ class QuartzActuator(
         val month = dateParts[1]
         val day = dateParts[2]
 
-        val cronExpr = "0 $minute $hour $day $month ? $year"
+        val cronExpr = CronUtil.buildOnceCronExpression(year, month, day, hour, minute)
 
         scheduleService.createTask(
             cronExpr = cronExpr,

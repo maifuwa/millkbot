@@ -1,9 +1,7 @@
 package com.bigboss.millkbot.schedule
 
-import com.bigboss.millkbot.model.ScheduledTask
-import com.bigboss.millkbot.model.enabled
-import com.bigboss.millkbot.model.fetchBy
-import com.bigboss.millkbot.model.id
+import com.bigboss.millkbot.model.*
+import com.bigboss.millkbot.util.CronUtil
 import org.babyfish.jimmer.sql.ast.mutation.SaveMode
 import org.babyfish.jimmer.sql.kt.KSqlClient
 import org.babyfish.jimmer.sql.kt.ast.expression.eq
@@ -95,7 +93,7 @@ class ScheduleService(
 
         allTasks.forEach { task ->
             try {
-                if (isTaskExpired(task.cronExpr, now)) {
+                if (CronUtil.isTaskExpired(task.cronExpr, now)) {
                     if (deleteTask(task)) {
                         deletedCount++
                         logger.info("删除过期任务: id=${task.id}, cron=${task.cronExpr}")
@@ -107,24 +105,6 @@ class ScheduleService(
         }
 
         return deletedCount
-    }
-
-    private fun isTaskExpired(cronExpr: String, now: java.time.LocalDateTime): Boolean {
-        val parts = cronExpr.trim().split(Regex("\\s+"))
-
-        if (parts.size == 7) {
-            val year = parts[6].toIntOrNull() ?: return false
-            val month = parts[4].toIntOrNull() ?: return false
-            val day = parts[3].toIntOrNull() ?: return false
-            val hour = parts[2].toIntOrNull() ?: return false
-            val minute = parts[1].toIntOrNull() ?: return false
-
-            val taskDateTime = java.time.LocalDateTime.of(year, month, day, hour, minute)
-
-            return taskDateTime.isBefore(now)
-        }
-
-        return false
     }
 
     fun loadTask(task: ScheduledTask): Boolean {
@@ -172,5 +152,14 @@ class ScheduleService(
             set(table.enabled, false)
             where(table.id eq taskId)
         }.execute() > 0
+    }
+
+    fun findEnableTaskByUser(id: Long): List<ScheduledTask> {
+        return sqlClient.createQuery(ScheduledTask::class) {
+            where(table.userId eq id)
+            where(table.createdBy eq "user")
+            where(table.enabled eq true)
+            select(table)
+        }.execute()
     }
 }
