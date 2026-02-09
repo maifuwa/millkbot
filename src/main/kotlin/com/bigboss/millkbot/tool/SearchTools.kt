@@ -1,65 +1,99 @@
 package com.bigboss.millkbot.tool
 
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import jakarta.annotation.PreDestroy
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.bigboss.millkbot.config.Config
+import com.bigboss.millkbot.util.JsonUtil
+import com.bigboss.millkbot.util.encode
+import kotlinx.serialization.Serializable
 import org.slf4j.LoggerFactory
 import org.springframework.ai.tool.annotation.Tool
 import org.springframework.stereotype.Service
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
+import org.springframework.web.client.RestClient
 
 @Service
-class SearchTools {
+class SearchTools(
+    private val restClient: RestClient,
+    private val config: Config
+) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val httpClient = HttpClient(CIO)
-
-    @PreDestroy
-    fun close() {
-        httpClient.close()
-    }
 
     @Tool(
         description = """
-        当用户询问需要实时信息、最新资讯、网络搜索或你不确定的事实时使用此工具。
+        使用Google搜索引擎搜索信息。
 
         参数说明：
-        - query: 搜索查询字符串
+        - query: 搜索关键词或问题
 
-        返回格式：搜索结果的文本摘要，包括标题、描述和相关链接
+        返回格式：JSON数组，包含搜索结果，每个结果包含：
+        - title: 标题
+        - link: 链接
+        - snippet: 摘要描述
+
+        使用场景：
+        - 需要获取最新的网络信息
+        - 需要查找特定主题的资料
+        - 需要验证某些事实或数据
     """
     )
-    suspend fun search(query: String): String {
+    fun search(query: String): String {
+        logger.debug("Tool search called: query={}", query)
+
         return try {
-            logger.debug("Tool search called: query={}", query)
-            val encodedQuery = withContext(Dispatchers.IO) {
-                URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
+            if (query.isBlank()) {
+                logger.warn("Empty query")
+                return JsonUtil.encode(emptyList<SearchResult>())
             }
-            val url = "https://api.duckduckgo.com/?q=$encodedQuery&format=json&no_html=1&skip_disambig=1"
 
-            val startMs = System.currentTimeMillis()
-            logger.debug("Tool search request: url={}", url)
+            val apiKey = config.searchConfig.serpApi
+            if (apiKey.isBlank()) {
+                logger.error("SerpApi key not configured")
+                return JsonUtil.encode(emptyList<SearchResult>())
+            }
 
-            val response: HttpResponse = httpClient.get(url)
-            val responseBody = response.bodyAsText()
+            val response = restClient.get()
+                .uri { uriBuilder ->
+                    uriBuilder
+                        .scheme("https")
+                        .host("serpapi.com")
+                        .path("/search")
+                        .queryParam("q", query)
+                        .queryParam("api_key", apiKey)
+                        .queryParam("engine", "google")
+                        .queryParam("num", 5)
+                        .build()
+                }
+                .retrieve()
+                .body(Map::class.java)
 
-            val durationMs = System.currentTimeMillis() - startMs
-            logger.debug(
-                "Tool search response: status={} durationMs={} bodyLength={}",
-                response.status,
-                durationMs,
-                responseBody.length
-            )
+            val results = parseSearchResults(response)
+            logger.debug("Tool search result: found {} results for query={}", results.size, query)
 
-            responseBody
+            JsonUtil.encode(results)
         } catch (e: Exception) {
-            logger.debug("Tool search failed: query={} error={}", query, e.message)
-            "搜索失败: ${e.message}"
+            logger.error("Tool search failed: query={} error={}", query, e.message, e)
+            JsonUtil.encode(emptyList<SearchResult>())
         }
     }
+
+    private fun parseSearchResults(response: Map<*, *>?): List<SearchResult> {
+        if (response == null) return emptyList()
+
+        val organicResults = response["organic_results"] as? List<*> ?: return emptyList()
+
+        return organicResults.mapNotNull { result ->
+            val resultMap = result as? Map<*, *> ?: return@mapNotNull null
+            SearchResult(
+                title = resultMap["title"] as? String ?: "",
+                link = resultMap["link"] as? String ?: "",
+                snippet = resultMap["snippet"] as? String ?: ""
+            )
+        }
+    }
+
+    @Serializable
+    data class SearchResult(
+        val title: String,
+        val link: String,
+        val snippet: String
+    )
 }

@@ -5,7 +5,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties(prefix = "app")
 data class Config(
     val botConfig: BotConfig,
-    val coroutineConfig: CoroutineConfig
+    val coroutineConfig: CoroutineConfig,
+    val searchConfig: SearchConfig
 )
 
 data class BotConfig(
@@ -19,4 +20,8 @@ data class CoroutineConfig(
     val corePoolSize: Int,
     val maxPoolSize: Int,
     val keepAliveSeconds: Int,
+)
+
+data class SearchConfig(
+    val serpApi: String
 )

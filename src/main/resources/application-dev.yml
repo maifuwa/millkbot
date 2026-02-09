@@ -7,6 +7,8 @@ app:
   bot-config:
     domain:
     token:
+  search-config:
+    serpApi:
 
 spring:
   datasource:
@@ -28,3 +30,4 @@ spring:
         options:
           model:
           temperature:
+        completions-path:
